@@ -5,7 +5,7 @@ import { useI18n } from "@/lib/i18n"
 type Tab = "usage" | "terms"
 
 type FontEntry = {
-  key: "GenYoMin" | "GenKiMin"
+  key: "GenYoMin2TW" | "IBMPlexSans"
   repo: string
   license: string
   basedOn?: string
@@ -13,18 +13,16 @@ type FontEntry = {
 
 const FONTS: FontEntry[] = [
   {
-    key: "GenYoMin",
+    key: "GenYoMin2TW",
     repo: "https://github.com/ButTaiwan/genyo-font",
     license:
       "https://github.com/ButTaiwan/genyo-font/blob/master/LICENSE.txt",
     basedOn: "https://github.com/adobe-fonts/source-han-serif",
   },
   {
-    key: "GenKiMin",
-    repo: "https://github.com/ButTaiwan/genyo-font",
-    license:
-      "https://github.com/ButTaiwan/genyo-font/blob/master/LICENSE.txt",
-    basedOn: "https://github.com/adobe-fonts/source-han-serif",
+    key: "IBMPlexSans",
+    repo: "https://github.com/IBM/plex",
+    license: "https://github.com/IBM/plex/blob/master/LICENSE.txt",
   },
 ]
 

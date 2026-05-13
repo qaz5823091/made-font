@@ -1,10 +1,20 @@
 import { useEffect } from "react"
-import { AlignCenter, AlignLeft, AlignRight, Loader2, Maximize2 } from "lucide-react"
 import {
-  FONT_FAMILY_IDS,
-  WEIGHT_IDS,
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  Bold,
+  Italic,
+  Loader2,
+  Maximize2,
+} from "lucide-react"
+import {
+  FONT_FAMILIES,
   ensureFontLoaded,
+  getFamily,
+  hasVariant,
   isFontLoaded,
+  resolveVariant,
 } from "@/lib/fonts"
 import {
   LINE_PRESETS,
@@ -45,13 +55,18 @@ const BG_MODES: BgMode[] = ["transparent", "complement-bg", "complement-text"]
 
 export function StyleControls({ style, onChange }: Props) {
   const { t } = useI18n()
-  const fontLoaded = isFontLoaded(style.family, style.weight)
+  const family = getFamily(style.family)
+  const activeVariant = resolveVariant(family, style.bold, style.italic)
+  const fontLoaded = isFontLoaded(style.family, activeVariant)
   const complement = complementColor(style.color)
   const hasFinePointer = useHasFinePointer()
 
+  const canBold = hasVariant(family, true, style.italic)
+  const canItalic = hasVariant(family, style.bold, true)
+
   useEffect(() => {
-    ensureFontLoaded(style.family, style.weight).catch(() => {})
-  }, [style.family, style.weight])
+    ensureFontLoaded(style.family, style.bold, style.italic).catch(() => {})
+  }, [style.family, style.bold, style.italic])
 
   const set = <K extends keyof TextStyle>(key: K, value: TextStyle[K]) =>
     onChange({ ...style, [key]: value })
@@ -150,30 +165,40 @@ export function StyleControls({ style, onChange }: Props) {
         </div>
       </div>
 
-      {/* Weight | Family — always 2 cols */}
+      {/* Family | Bold/Italic toggles */}
       <div className="grid grid-cols-2 gap-2">
         <SelectField
-          label={
+          label={t("panel.family")}
+          value={style.family}
+          onChange={(v) => set("family", v)}
+          options={FONT_FAMILIES.map((f) => ({ value: f.id, label: f.id }))}
+        />
+        <div>
+          <Label>
             <span className="inline-flex items-center gap-1">
-              {t("panel.weight")}
+              {t("panel.style")}
               {!fontLoaded && (
                 <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
               )}
             </span>
-          }
-          value={style.weight}
-          onChange={(v) => set("weight", v as TextStyle["weight"])}
-          options={WEIGHT_IDS.map((id) => ({ value: id, label: t(`weight.${id}`) }))}
-        />
-        <SelectField
-          label={t("panel.family")}
-          value={style.family}
-          onChange={(v) => set("family", v as TextStyle["family"])}
-          options={FONT_FAMILY_IDS.map((id) => ({
-            value: id,
-            label: t(`family.${id}`),
-          }))}
-        />
+          </Label>
+          <div className="mt-1 grid grid-cols-2 gap-1">
+            <StyleToggle
+              active={style.bold}
+              disabled={!canBold}
+              onClick={() => set("bold", !style.bold)}
+              aria={t("style.bold")}
+              icon={<Bold className="h-3.5 w-3.5" />}
+            />
+            <StyleToggle
+              active={style.italic}
+              disabled={!canItalic}
+              onClick={() => set("italic", !style.italic)}
+              aria={t("style.italic")}
+              icon={<Italic className="h-3.5 w-3.5" />}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Align | Line — full on narrow, half on wide */}
@@ -208,6 +233,40 @@ function Label({ children }: { children: React.ReactNode }) {
     <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
       {children}
     </div>
+  )
+}
+
+function StyleToggle({
+  active,
+  disabled,
+  onClick,
+  aria,
+  icon,
+}: {
+  active: boolean
+  disabled: boolean
+  onClick: () => void
+  aria: string
+  icon: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={aria}
+      aria-pressed={active}
+      title={aria}
+      className={`inline-flex h-8 items-center justify-center rounded-md border text-xs font-medium transition ${
+        disabled
+          ? "cursor-not-allowed border-input bg-muted/30 text-muted-foreground/40"
+          : active
+            ? "border-primary bg-primary text-primary-foreground shadow-sm"
+            : "border-input bg-background text-foreground"
+      }`}
+    >
+      {icon}
+    </button>
   )
 }
 

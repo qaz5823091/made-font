@@ -60,33 +60,6 @@ function Shell() {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setHelpOpen(true)}
-            aria-label={t("help.button")}
-            title={t("help.button")}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full border bg-background text-muted-foreground"
-          >
-            <HelpCircle className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setTheme(NEXT_THEME[theme])}
-            aria-label={t(`theme.${theme}`)}
-            title={t(`theme.${theme}`)}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full border bg-background text-muted-foreground"
-          >
-            <ThemeIcon className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setLocale(NEXT_LOCALE[locale])}
-            aria-label={t("locale.switch")}
-            title={t("locale.switch")}
-            className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border bg-background px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
-          >
-            {locale}
-          </button>
           <div className="inline-flex rounded-full border bg-muted/40 p-0.5 text-xs">
             <button
               type="button"
@@ -115,6 +88,33 @@ function Shell() {
               <ImageIcon className="h-3.5 w-3.5" />
             </button>
           </div>
+          <button
+            type="button"
+            onClick={() => setLocale(NEXT_LOCALE[locale])}
+            aria-label={t("locale.switch")}
+            title={t("locale.switch")}
+            className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border bg-background px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
+          >
+            {locale}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTheme(NEXT_THEME[theme])}
+            aria-label={t(`theme.${theme}`)}
+            title={t(`theme.${theme}`)}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full border bg-background text-muted-foreground"
+          >
+            <ThemeIcon className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            aria-label={t("help.button")}
+            title={t("help.button")}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full border bg-background text-muted-foreground"
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
         </div>
       </header>
 

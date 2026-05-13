@@ -68,10 +68,12 @@ export function ImageEditor() {
   useEffect(() => {
     const seen = new Set<string>()
     for (const l of layers) {
-      const key = `${l.style.family}|${l.style.weight}`
+      const key = `${l.style.family}|${l.style.bold}|${l.style.italic}`
       if (seen.has(key)) continue
       seen.add(key)
-      ensureFontLoaded(l.style.family, l.style.weight).then(() => draw())
+      ensureFontLoaded(l.style.family, l.style.bold, l.style.italic).then(() =>
+        draw(),
+      )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layers])

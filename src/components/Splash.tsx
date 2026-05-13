@@ -40,7 +40,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
       window.setTimeout(onDone, FADE_MS)
     }
 
-    const fontPromise = ensureFontLoaded("GenYoMin2TW", "R").catch(() => {})
+    const fontPromise = ensureFontLoaded("GenYoMin2TW", false, false).catch(() => {})
     const minWait = new Promise<void>((r) => window.setTimeout(r, MIN_DURATION_MS))
     const hardCap = new Promise<void>((r) => window.setTimeout(r, MAX_DURATION_MS))
 

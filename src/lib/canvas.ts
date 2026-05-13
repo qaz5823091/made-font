@@ -1,6 +1,6 @@
 import type { TextLayer, TextStyle } from "./types"
 import { styleLineHeight, stylePx } from "./types"
-import { fontCssFamily } from "./fonts"
+import { fontCssFamily, getFamily, resolveVariant } from "./fonts"
 import { complementColor } from "./color"
 
 export type LineMetrics = {
@@ -28,7 +28,9 @@ export function measureText(
 }
 
 export function cssFontShorthand(style: TextStyle): string {
-  return `${stylePx(style)}px "${fontCssFamily(style.family, style.weight)}"`
+  const family = getFamily(style.family)
+  const key = resolveVariant(family, style.bold, style.italic)
+  return `${stylePx(style)}px "${fontCssFamily(style.family, key)}"`
 }
 
 export function resolveColors(style: TextStyle): { fg: string; bg: string | null } {

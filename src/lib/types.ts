@@ -1,5 +1,3 @@
-import type { FontFamilyId, WeightId } from "./fonts"
-
 export type BgMode = "transparent" | "complement-bg" | "complement-text"
 
 export type LinePreset = "S" | "M" | "L"
@@ -15,8 +13,10 @@ export const SIZE_MAX = 600
 export const SIZE_DEFAULT = 112
 
 export type TextStyle = {
-  family: FontFamilyId
-  weight: WeightId
+  /** Font family id — matches FONT_FAMILIES[].id (also display label). */
+  family: string
+  bold: boolean
+  italic: boolean
   /** Continuous font size (CSS pixels). Adjusted via pinch gesture. */
   size: number
   linePreset: LinePreset
@@ -48,7 +48,8 @@ export function clampSize(n: number): number {
 
 export const DEFAULT_STYLE: TextStyle = {
   family: "GenYoMin2TW",
-  weight: "R",
+  bold: false,
+  italic: false,
   size: SIZE_DEFAULT,
   linePreset: "M",
   color: "#111827",

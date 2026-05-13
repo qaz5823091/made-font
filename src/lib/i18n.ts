@@ -20,8 +20,10 @@ const ZH: Messages = {
   "panel.text.charCount": "{n} 字",
   "panel.color": "顏色",
   "panel.bg": "底色",
-  "panel.weight": "字重",
+  "panel.style": "字型樣式",
   "panel.family": "字型",
+  "style.bold": "粗體",
+  "style.italic": "斜體",
   "panel.align": "對齊",
   "panel.line": "行距",
   "panel.size": "字級",
@@ -42,16 +44,6 @@ const ZH: Messages = {
   "align.left": "靠左",
   "align.center": "置中",
   "align.right": "靠右",
-
-  "weight.EL": "極細 EL",
-  "weight.L": "細 L",
-  "weight.R": "標準 R",
-  "weight.M": "中 M",
-  "weight.SB": "中粗 SB",
-  "weight.B": "粗 B",
-  "weight.H": "特粗 H",
-  "family.GenKiMin2TW": "源起 明朝",
-  "family.GenYoMin2TW": "源樣 明朝",
 
   "action.copy": "複製圖片",
   "action.download": "下載 PNG",
@@ -95,12 +87,12 @@ const ZH: Messages = {
   "help.terms.title": "字型來源與授權",
   "help.terms.intro":
     "made-font 內附的字型檔皆採用以下開源字型，所有權與授權條款屬原作者。匯出的圖片可自由使用，但散布或再嵌入字型檔需遵守對應字型授權。",
-  "help.terms.font.GenYoMin.title": "源樣明朝 GenYoMin",
-  "help.terms.font.GenYoMin.desc":
+  "help.terms.font.GenYoMin2TW.title": "源樣明朝 GenYoMin2TW",
+  "help.terms.font.GenYoMin2TW.desc":
     "由 ButTaiwan 製作，衍生自 Adobe Source Han Serif（思源宋體），追求古籍活字風格。",
-  "help.terms.font.GenKiMin.title": "源起明朝 GenKiMin",
-  "help.terms.font.GenKiMin.desc":
-    "ButTaiwan/genyo-font 從 v2 起加入的分支，對部件不一致的字進行統一處理。",
+  "help.terms.font.IBMPlexSans.title": "IBM Plex Sans",
+  "help.terms.font.IBMPlexSans.desc":
+    "IBM 設計團隊所製作的開源無襯線字型，支援多種權重與斜體。",
   "help.terms.label.repo": "原始 Repo",
   "help.terms.label.license": "授權",
   "help.terms.label.basedOn": "衍生自",
@@ -127,8 +119,10 @@ const EN: Messages = {
   "panel.text.charCount": "{n} chars",
   "panel.color": "Color",
   "panel.bg": "Background",
-  "panel.weight": "Weight",
+  "panel.style": "Style",
   "panel.family": "Family",
+  "style.bold": "Bold",
+  "style.italic": "Italic",
   "panel.align": "Align",
   "panel.line": "Line",
   "panel.size": "Size",
@@ -149,16 +143,6 @@ const EN: Messages = {
   "align.left": "Left",
   "align.center": "Center",
   "align.right": "Right",
-
-  "weight.EL": "ExtraLight",
-  "weight.L": "Light",
-  "weight.R": "Regular",
-  "weight.M": "Medium",
-  "weight.SB": "SemiBold",
-  "weight.B": "Bold",
-  "weight.H": "Heavy",
-  "family.GenKiMin2TW": "GenKi Mincho",
-  "family.GenYoMin2TW": "GenYo Mincho",
 
   "action.copy": "Copy",
   "action.download": "Download",
@@ -202,12 +186,12 @@ const EN: Messages = {
   "help.terms.title": "Font credits & licenses",
   "help.terms.intro":
     "made-font bundles the following open-source fonts. Ownership and license terms belong to their original authors. Exported images are yours to use, but redistributing or re-embedding the font files must comply with each font's license.",
-  "help.terms.font.GenYoMin.title": "GenYoMin (源樣明朝)",
-  "help.terms.font.GenYoMin.desc":
+  "help.terms.font.GenYoMin2TW.title": "GenYoMin2TW (源樣明朝)",
+  "help.terms.font.GenYoMin2TW.desc":
     "By ButTaiwan; derived from Adobe Source Han Serif, aiming at the classic letterpress feel.",
-  "help.terms.font.GenKiMin.title": "GenKiMin (源起明朝)",
-  "help.terms.font.GenKiMin.desc":
-    "A v2 branch inside ButTaiwan/genyo-font that programmatically harmonises mismatched glyph components.",
+  "help.terms.font.IBMPlexSans.title": "IBM Plex Sans",
+  "help.terms.font.IBMPlexSans.desc":
+    "An open-source sans-serif typeface by IBM with multiple weights and italics.",
   "help.terms.label.repo": "Source repo",
   "help.terms.label.license": "License",
   "help.terms.label.basedOn": "Based on",

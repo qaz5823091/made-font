@@ -36,7 +36,7 @@ export function PureEditor() {
   useEffect(() => {
     let cancelled = false
     setFontReady(false)
-    ensureFontLoaded(style.family, style.weight)
+    ensureFontLoaded(style.family, style.bold, style.italic)
       .then(() => {
         if (!cancelled) setFontReady(true)
       })
@@ -46,7 +46,7 @@ export function PureEditor() {
     return () => {
       cancelled = true
     }
-  }, [style.family, style.weight])
+  }, [style.family, style.bold, style.italic])
 
   const pinch = usePinchGesture<HTMLCanvasElement>({
     onPinchStart: () => {
