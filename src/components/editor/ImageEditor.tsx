@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Copy, Download, ImagePlus, Plus, Trash2, Type } from "lucide-react"
+import { Copy, Download, ImagePlus, Plus, Trash2 } from "lucide-react"
 import { ensureFontLoaded } from "@/lib/fonts"
-import { cssFontShorthand, drawLayer, pointInLayer } from "@/lib/canvas"
+import {
+  drawLayer,
+  layerBoundingBox,
+  pointInLayer,
+} from "@/lib/canvas"
 import {
   DEFAULT_STYLE,
   newLayerId,
@@ -26,7 +30,6 @@ export function ImageEditor() {
   const [image, setImage] = useState<Image | null>(null)
   const [layers, setLayers] = useState<TextLayer[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [editingText, setEditingText] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -37,7 +40,6 @@ export function ImageEditor() {
     pointerId: number
   } | null>(null)
 
-  // Preload fonts used by layers
   useEffect(() => {
     const seen = new Set<string>()
     for (const l of layers) {
@@ -53,58 +55,49 @@ export function ImageEditor() {
     [layers, selectedId],
   )
 
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const dpr = Math.min(window.devicePixelRatio || 1, 3)
-    const w = image?.width ?? 1080
-    const h = image?.height ?? 1080
-    canvas.width = w * dpr
-    canvas.height = h * dpr
-    // Let CSS `max-width: 100%` + intrinsic aspect ratio handle scaling on mobile.
-    canvas.style.width = `${w}px`
-    canvas.style.height = "auto"
+  const drawScene = useCallback(
+    (showOutline: boolean) => {
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const dpr = Math.min(window.devicePixelRatio || 1, 3)
+      const w = image?.width ?? 1080
+      const h = image?.height ?? 1080
+      canvas.width = w * dpr
+      canvas.height = h * dpr
+      canvas.style.width = `${w}px`
+      canvas.style.height = "auto"
 
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    if (image) {
-      ctx.drawImage(image.el, 0, 0, w * dpr, h * dpr)
-    } else {
-      ctx.fillStyle = "#0f172a"
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-    }
-
-    for (const layer of layers) {
-      drawLayer(ctx, layer, dpr)
-    }
-
-    if (selectedLayer) {
-      const layer = selectedLayer
-      const measureCtx = document.createElement("canvas").getContext("2d")!
-      measureCtx.font = cssFontShorthand(layer.style)
-      const lines = layer.text.length === 0 ? [""] : layer.text.split("\n")
-      let maxW = 0
-      for (const line of lines) {
-        const lw = measureCtx.measureText(line).width
-        if (lw > maxW) maxW = lw
+      if (image) {
+        ctx.drawImage(image.el, 0, 0, w * dpr, h * dpr)
+      } else {
+        ctx.fillStyle = "#0f172a"
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
       }
-      const lhPx = layer.style.size * layer.style.lineHeight
-      const bw = Math.max(maxW, 12)
-      const bh = Math.max(lines.length * lhPx, layer.style.size)
-      const pad = 12
-      ctx.save()
-      ctx.translate(layer.x * dpr, layer.y * dpr)
-      ctx.rotate((layer.rotation * Math.PI) / 180)
-      ctx.scale(dpr, dpr)
-      ctx.strokeStyle = "#3b82f6"
-      ctx.lineWidth = 2
-      ctx.setLineDash([6, 4])
-      ctx.strokeRect(-bw / 2 - pad, -bh / 2 - pad, bw + pad * 2, bh + pad * 2)
-      ctx.restore()
-    }
-  }, [image, layers, selectedLayer])
+
+      for (const layer of layers) {
+        drawLayer(ctx, layer, dpr)
+      }
+
+      if (showOutline && selectedLayer) {
+        const b = layerBoundingBox(ctx, selectedLayer)
+        const pad = 8
+        ctx.save()
+        ctx.scale(dpr, dpr)
+        ctx.strokeStyle = "#3b82f6"
+        ctx.lineWidth = 2
+        ctx.setLineDash([6, 4])
+        ctx.strokeRect(b.x - pad, b.y - pad, b.w + pad * 2, b.h + pad * 2)
+        ctx.restore()
+      }
+    },
+    [image, layers, selectedLayer],
+  )
+
+  const draw = useCallback(() => drawScene(true), [drawScene])
 
   useEffect(() => {
     draw()
@@ -139,13 +132,12 @@ export function ImageEditor() {
       x: cx,
       y: cy,
       rotation: 0,
-      style: { ...DEFAULT_STYLE, color: "#ffffff", size: image ? Math.round((image.width / 1080) * 96) : 96 },
+      style: { ...DEFAULT_STYLE, color: "#ffffff" },
     }
     setLayers((prev) => [...prev, layer])
     setSelectedId(layer.id)
   }
 
-  // Convert pointer position to canvas (image) coordinates
   const pointerToCanvas = (
     e: React.PointerEvent<HTMLCanvasElement>,
   ): { x: number; y: number } => {
@@ -162,7 +154,6 @@ export function ImageEditor() {
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const { x, y } = pointerToCanvas(e)
     const ctx = canvasRef.current!.getContext("2d")!
-    // Hit-test top-most first
     for (let i = layers.length - 1; i >= 0; i--) {
       const layer = layers[i]
       if (pointInLayer(ctx, layer, x, y)) {
@@ -220,8 +211,13 @@ export function ImageEditor() {
 
   const exportBlob = useCallback(async () => {
     if (!canvasRef.current) return null
-    return canvasToPngBlob(canvasRef.current)
-  }, [])
+    drawScene(false)
+    try {
+      return await canvasToPngBlob(canvasRef.current)
+    } finally {
+      drawScene(true)
+    }
+  }, [drawScene])
 
   const flash = (msg: string) => {
     setToast(msg)
@@ -252,8 +248,8 @@ export function ImageEditor() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-auto bg-slate-900">
-        <div className="flex min-h-full items-center justify-center p-4">
+      <div className="flex-1 min-h-0 overflow-auto bg-slate-900">
+        <div className="flex min-h-full items-center justify-center p-3">
           {image ? (
             <canvas
               ref={canvasRef}
@@ -267,7 +263,7 @@ export function ImageEditor() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex h-72 w-full max-w-sm flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/30 bg-white/5 text-white/90 transition hover:border-white/50 hover:bg-white/10"
+              className="flex h-64 w-full max-w-sm flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/30 bg-white/5 text-white/90 transition hover:border-white/50 hover:bg-white/10"
             >
               <ImagePlus className="h-10 w-10" />
               <span className="text-sm">點此匯入圖片</span>
@@ -286,21 +282,21 @@ export function ImageEditor() {
       />
 
       <div className="border-t bg-card">
-        <div className="space-y-3 p-4">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="space-y-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-medium"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs font-medium"
             >
               <ImagePlus className="h-3.5 w-3.5" />
-              {image ? "更換圖片" : "匯入圖片"}
+              {image ? "更換" : "匯入"}
             </button>
             <button
               type="button"
               onClick={addTextLayer}
               disabled={!image}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus className="h-3.5 w-3.5" />
               新增文字
@@ -309,66 +305,31 @@ export function ImageEditor() {
               <button
                 type="button"
                 onClick={deleteSelected}
-                className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive"
+                aria-label="刪除"
+                className="ml-auto inline-flex items-center justify-center rounded-md border border-destructive/30 bg-destructive/10 p-1.5 text-destructive"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                刪除
               </button>
             )}
           </div>
 
           {selectedLayer ? (
             <>
-              <div>
-                <div className="mb-1 flex items-center justify-between">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    文字內容
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setEditingText((v) => !v)}
-                    className="text-[11px] text-muted-foreground hover:text-foreground"
-                  >
-                    {editingText ? "收合" : "展開編輯"}
-                  </button>
-                </div>
-                {editingText ? (
-                  <textarea
-                    value={selectedLayer.text}
-                    onChange={(e) => updateSelectedText(e.target.value)}
-                    rows={2}
-                    className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
-                ) : (
-                  <input
-                    type="text"
-                    value={selectedLayer.text}
-                    onChange={(e) => updateSelectedText(e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
-                )}
-              </div>
-
-              <details className="group rounded-lg border bg-background" open>
-                <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium select-none [&::-webkit-details-marker]:hidden">
-                  <span className="inline-flex items-center gap-1">
-                    <Type className="h-3.5 w-3.5" />
-                    樣式
-                  </span>
-                </summary>
-                <div className="border-t px-3 py-3">
-                  <StyleControls
-                    style={selectedLayer.style}
-                    onChange={updateSelectedStyle}
-                  />
-                </div>
-              </details>
+              <input
+                type="text"
+                value={selectedLayer.text}
+                onChange={(e) => updateSelectedText(e.target.value)}
+                placeholder="文字內容…"
+                className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              <StyleControls
+                style={selectedLayer.style}
+                onChange={updateSelectedStyle}
+              />
             </>
           ) : (
-            <div className="rounded-lg bg-muted/40 px-3 py-3 text-xs text-muted-foreground">
-              {image
-                ? "點選畫布上的文字以編輯，或按「新增文字」開始。"
-                : "請先匯入一張圖片。"}
+            <div className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              {image ? "點選畫布文字以編輯，或按「新增文字」。" : "請先匯入一張圖片。"}
             </div>
           )}
 
@@ -377,7 +338,7 @@ export function ImageEditor() {
               type="button"
               onClick={handleCopy}
               disabled={!image}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Copy className="h-4 w-4" />
               複製圖片
@@ -386,7 +347,7 @@ export function ImageEditor() {
               type="button"
               onClick={handleDownload}
               disabled={!image}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
               下載 PNG

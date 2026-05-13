@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Copy, Download, Loader2 } from "lucide-react"
 import { ensureFontLoaded } from "@/lib/fonts"
-import { cssFontShorthand, measureText } from "@/lib/canvas"
-import { DEFAULT_STYLE, type TextStyle } from "@/lib/types"
+import {
+  cssFontShorthand,
+  measureText,
+  resolveColors,
+} from "@/lib/canvas"
+import {
+  DEFAULT_STYLE,
+  stylePx,
+  type TextStyle,
+} from "@/lib/types"
 import {
   canvasToPngBlob,
   copyBlobToClipboard,
@@ -39,6 +47,7 @@ export function PureEditor() {
     const canvas = canvasRef.current
     if (!canvas) return
     const dpr = Math.min(window.devicePixelRatio || 1, 3)
+
     const measureCanvas = document.createElement("canvas")
     const mctx = measureCanvas.getContext("2d")
     if (!mctx) return
@@ -55,8 +64,16 @@ export function PureEditor() {
     if (!ctx) return
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.scale(dpr, dpr)
+
+    const { fg, bg } = resolveColors(style)
+
+    if (bg) {
+      ctx.fillStyle = bg
+      ctx.fillRect(0, 0, cssWidth, cssHeight)
+    }
+
     ctx.font = cssFontShorthand(style)
-    ctx.fillStyle = style.color
+    ctx.fillStyle = fg
     ctx.textBaseline = "middle"
     ctx.textAlign = style.align
 
@@ -84,6 +101,11 @@ export function PureEditor() {
     return canvasToPngBlob(canvasRef.current)
   }, [])
 
+  const flash = (msg: string) => {
+    setToast(msg)
+    window.setTimeout(() => setToast(null), 1800)
+  }
+
   const handleCopy = async () => {
     try {
       const blob = await exportBlob()
@@ -106,17 +128,13 @@ export function PureEditor() {
     }
   }
 
-  const flash = (msg: string) => {
-    setToast(msg)
-    window.setTimeout(() => setToast(null), 1800)
-  }
-
   const charCount = useMemo(() => [...text].length, [text])
+  const sizeHint = stylePx(style)
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-auto bg-[linear-gradient(45deg,#f1f5f9_25%,transparent_25%),linear-gradient(-45deg,#f1f5f9_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f1f5f9_75%),linear-gradient(-45deg,transparent_75%,#f1f5f9_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0]">
-        <div className="flex min-h-full items-center justify-center p-4">
+      <div className="flex-1 min-h-0 overflow-auto bg-[linear-gradient(45deg,#f1f5f9_25%,transparent_25%),linear-gradient(-45deg,#f1f5f9_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f1f5f9_75%),linear-gradient(-45deg,transparent_75%,#f1f5f9_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0]">
+        <div className="flex min-h-full items-center justify-center p-3">
           <div className="relative">
             {!fontReady && (
               <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/70 backdrop-blur-sm">
@@ -135,44 +153,32 @@ export function PureEditor() {
       </div>
 
       <div className="border-t bg-card">
-        <div className="space-y-3 p-4">
+        <div className="space-y-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <label className="text-xs font-medium text-muted-foreground">
-                文字內容
-              </label>
-              <span className="text-[11px] text-muted-foreground tabular-nums">
-                {charCount} 字
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                文字 · {sizeHint}px
+              </span>
+              <span className="text-[10px] text-muted-foreground tabular-nums">
+                {charCount}
               </span>
             </div>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              rows={3}
+              rows={2}
               placeholder="輸入文字…"
-              className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="w-full resize-none rounded-lg border border-input bg-background px-3 py-1.5 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </div>
 
-          <details className="group rounded-lg border bg-background">
-            <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium select-none [&::-webkit-details-marker]:hidden">
-              <span className="inline-flex items-center gap-1">
-                樣式
-                <span className="text-[11px] text-muted-foreground group-open:hidden">
-                  點擊展開
-                </span>
-              </span>
-            </summary>
-            <div className="border-t px-3 py-3">
-              <StyleControls style={style} onChange={setStyle} />
-            </div>
-          </details>
+          <StyleControls style={style} onChange={setStyle} />
 
           <div className="grid grid-cols-2 gap-2 pt-1">
             <button
               type="button"
               onClick={handleCopy}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground shadow-sm active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm active:scale-[0.98]"
             >
               <Copy className="h-4 w-4" />
               複製圖片
@@ -180,7 +186,7 @@ export function PureEditor() {
             <button
               type="button"
               onClick={handleDownload}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium shadow-sm active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm active:scale-[0.98]"
             >
               <Download className="h-4 w-4" />
               下載 PNG

@@ -2,29 +2,36 @@ import { useState } from "react"
 import { ImageIcon, Type } from "lucide-react"
 import { PureEditor } from "@/components/editor/PureEditor"
 import { ImageEditor } from "@/components/editor/ImageEditor"
+import { Splash } from "@/components/Splash"
 
 type Mode = "pure" | "image"
 
 function App() {
   const [mode, setMode] = useState<Mode>("pure")
+  const [splashed, setSplashed] = useState(false)
+
+  if (!splashed) {
+    return (
+      <main className="h-[100dvh] bg-background text-foreground">
+        <Splash onDone={() => setSplashed(true)} />
+      </main>
+    )
+  }
 
   return (
     <main className="flex h-[100dvh] flex-col bg-background text-foreground">
-      <header className="flex items-center justify-between border-b bg-card px-4 py-3">
+      <header className="flex items-center justify-between border-b bg-card px-3 py-2">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-foreground text-background flex items-center justify-center text-sm font-bold tracking-tighter">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-foreground text-background text-sm font-bold">
             字
           </div>
-          <div className="leading-tight">
-            <div className="text-sm font-semibold">made-font</div>
-            <div className="text-[11px] text-muted-foreground">字型 → 圖片</div>
-          </div>
+          <div className="text-sm font-semibold leading-none">made-font</div>
         </div>
         <div className="inline-flex rounded-full border bg-muted/40 p-0.5 text-xs">
           <button
             type="button"
             onClick={() => setMode("pure")}
-            className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 transition ${
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition ${
               mode === "pure"
                 ? "bg-background shadow-sm text-foreground"
                 : "text-muted-foreground"
@@ -36,7 +43,7 @@ function App() {
           <button
             type="button"
             onClick={() => setMode("image")}
-            className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 transition ${
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition ${
               mode === "image"
                 ? "bg-background shadow-sm text-foreground"
                 : "text-muted-foreground"
@@ -48,7 +55,7 @@ function App() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden">
         {mode === "pure" ? <PureEditor /> : <ImageEditor />}
       </div>
     </main>
