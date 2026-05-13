@@ -5,7 +5,8 @@ import { defineConfig } from "vite"
 // `BASE_PATH` is supplied by the GitHub Actions deploy workflow
 // (actions/configure-pages outputs e.g. "/made-font/"). Locally and during
 // `npm run dev` it's unset, so we fall back to "/".
-const basePath = process.env.BASE_PATH || "/"
+const rawBase = process.env.BASE_PATH || "/"
+const basePath = rawBase.endsWith("/") ? rawBase : `${rawBase}/`
 
 export default defineConfig(({ command }) => ({
   plugins: [react()],
