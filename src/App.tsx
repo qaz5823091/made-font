@@ -30,12 +30,28 @@ const NEXT_LOCALE: Record<Locale, Locale> = {
   en: "zh",
 }
 
+const IMAGE_MODE_ENABLED = false
+
 function Shell() {
   const { t, locale, setLocale } = useI18n()
   const { theme, setTheme } = useTheme()
   const [mode, setMode] = useState<Mode>("pure")
   const [splashed, setSplashed] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
+
+  const flash = (msg: string) => {
+    setToast(msg)
+    window.setTimeout(() => setToast(null), 1800)
+  }
+
+  const handleSelectImageMode = () => {
+    if (IMAGE_MODE_ENABLED) {
+      setMode("image")
+    } else {
+      flash(t("mode.image.wip"))
+    }
+  }
 
   if (!splashed) {
     return (
@@ -51,9 +67,11 @@ function Shell() {
     <main className="flex h-[100dvh] flex-col bg-background text-foreground">
       <header className="flex items-center justify-between gap-2 border-b bg-card px-3 py-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-foreground text-background text-sm font-bold">
-            字
-          </div>
+          <img
+            src={`${import.meta.env.BASE_URL}icon.png`}
+            alt=""
+            className="h-7 w-7 shrink-0 rounded-md"
+          />
           <div className="truncate text-sm font-semibold leading-none">
             {t("app.title")}
           </div>
@@ -76,13 +94,16 @@ function Shell() {
             </button>
             <button
               type="button"
-              onClick={() => setMode("image")}
+              onClick={handleSelectImageMode}
               aria-label={t("mode.image")}
               title={t("mode.image")}
+              aria-disabled={!IMAGE_MODE_ENABLED}
               className={`inline-flex h-6 w-7 items-center justify-center rounded-full transition ${
-                mode === "image"
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground"
+                !IMAGE_MODE_ENABLED
+                  ? "cursor-not-allowed text-muted-foreground/40"
+                  : mode === "image"
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground"
               }`}
             >
               <ImageIcon className="h-3.5 w-3.5" />
@@ -119,10 +140,16 @@ function Shell() {
       </header>
 
       <div className="flex-1 min-h-0 overflow-hidden">
-        {mode === "pure" ? <PureEditor /> : <ImageEditor />}
+        {mode === "pure" || !IMAGE_MODE_ENABLED ? <PureEditor /> : <ImageEditor />}
       </div>
 
       <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+
+      {toast && (
+        <div className="pointer-events-none fixed bottom-24 left-1/2 -translate-x-1/2 z-40 rounded-full bg-black/80 px-4 py-2 text-xs text-white shadow-lg backdrop-blur">
+          {toast}
+        </div>
+      )}
     </main>
   )
 }

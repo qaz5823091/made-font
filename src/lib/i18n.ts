@@ -5,10 +5,12 @@ export type Locale = "zh" | "en"
 type Messages = Record<string, string>
 
 const ZH: Messages = {
-  "app.title": "made-font",
+  "app.title": "MadeFont",
   "app.subtitle": "字型 → 圖片",
+  "app.description": "用網頁打造你的自訂字型圖片。MadeFont！",
   "mode.pure": "純文字",
   "mode.image": "圖片合成",
+  "mode.image.wip": "圖片合成功能還在開發中…",
   "theme.system": "跟隨系統",
   "theme.light": "淺色",
   "theme.dark": "深色",
@@ -104,10 +106,12 @@ const ZH: Messages = {
 }
 
 const EN: Messages = {
-  "app.title": "made-font",
+  "app.title": "MadeFont",
   "app.subtitle": "Font → Image",
+  "app.description": "A website to make your custom font. MadeFont!",
   "mode.pure": "Text only",
   "mode.image": "Image overlay",
+  "mode.image.wip": "Image overlay is still in development…",
   "theme.system": "Follow system",
   "theme.light": "Light",
   "theme.dark": "Dark",
