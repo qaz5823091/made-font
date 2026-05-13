@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { ensureFontLoaded } from "@/lib/fonts"
+import { useI18n } from "@/lib/i18n"
 
 type FrameStyle = React.CSSProperties
 
@@ -20,6 +21,7 @@ const MAX_DURATION_MS = 5000
 const FADE_MS = 320
 
 export function Splash({ onDone }: { onDone: () => void }) {
+  const { t } = useI18n()
   const [idx, setIdx] = useState(0)
   const [fading, setFading] = useState(false)
 
@@ -103,7 +105,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
           />
         ))}
       </div>
-      <div className="mt-3 text-xs text-muted-foreground">字型 → 圖片</div>
+      <div className="mt-3 text-xs text-muted-foreground">{t("splash.subtitle")}</div>
     </div>
   )
 }

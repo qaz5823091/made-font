@@ -2,20 +2,19 @@ export type FontFamilyId = "GenKiMin2TW" | "GenYoMin2TW"
 
 export type WeightId = "EL" | "L" | "R" | "M" | "SB" | "B" | "H"
 
-export const FONT_FAMILIES: { id: FontFamilyId; label: string; description: string }[] = [
-  { id: "GenKiMin2TW", label: "源樣明體 假名", description: "GenKiMin2TW（日系假名強化）" },
-  { id: "GenYoMin2TW", label: "源樣明體 漢字", description: "GenYoMin2TW（漢字優化）" },
-]
+export const FONT_FAMILY_IDS: FontFamilyId[] = ["GenKiMin2TW", "GenYoMin2TW"]
 
-export const WEIGHTS: { id: WeightId; label: string; cssWeight: number }[] = [
-  { id: "EL", label: "極細 EL", cssWeight: 200 },
-  { id: "L", label: "細 L", cssWeight: 300 },
-  { id: "R", label: "標準 R", cssWeight: 400 },
-  { id: "M", label: "中 M", cssWeight: 500 },
-  { id: "SB", label: "中粗 SB", cssWeight: 600 },
-  { id: "B", label: "粗 B", cssWeight: 700 },
-  { id: "H", label: "特粗 H", cssWeight: 900 },
-]
+export const WEIGHT_IDS: WeightId[] = ["EL", "L", "R", "M", "SB", "B", "H"]
+
+export const WEIGHT_CSS: Record<WeightId, number> = {
+  EL: 200,
+  L: 300,
+  R: 400,
+  M: 500,
+  SB: 600,
+  B: 700,
+  H: 900,
+}
 
 export function fontFileUrl(family: FontFamilyId, weight: WeightId): string {
   return `${import.meta.env.BASE_URL}fonts/${family}-${weight}.otf`

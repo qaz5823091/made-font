@@ -1,25 +1,19 @@
 import { useEffect } from "react"
+import { AlignCenter, AlignLeft, AlignRight, Loader2 } from "lucide-react"
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  Loader2,
-} from "lucide-react"
-import {
-  FONT_FAMILIES,
-  WEIGHTS,
+  FONT_FAMILY_IDS,
+  WEIGHT_IDS,
   ensureFontLoaded,
   isFontLoaded,
 } from "@/lib/fonts"
 import {
   LINE_PRESETS,
-  SIZE_PRESETS,
   type BgMode,
   type LinePreset,
-  type SizePreset,
   type TextStyle,
 } from "@/lib/types"
 import { complementColor } from "@/lib/color"
+import { useI18n } from "@/lib/i18n"
 
 type Props = {
   style: TextStyle
@@ -43,13 +37,10 @@ const ALIGN_OPTS = [
   { v: "right" as const, Icon: AlignRight },
 ]
 
-const BG_MODES: { v: BgMode; label: string }[] = [
-  { v: "transparent", label: "透明" },
-  { v: "complement-bg", label: "補色底" },
-  { v: "complement-text", label: "補色字" },
-]
+const BG_MODES: BgMode[] = ["transparent", "complement-bg", "complement-text"]
 
 export function StyleControls({ style, onChange }: Props) {
+  const { t } = useI18n()
   const fontLoaded = isFontLoaded(style.family, style.weight)
   const complement = complementColor(style.color)
 
@@ -62,85 +53,55 @@ export function StyleControls({ style, onChange }: Props) {
 
   return (
     <div className="space-y-2">
-      {/* Row 1: font + weight selects */}
-      <div className="grid grid-cols-2 gap-2">
-        <SelectField
-          label="字型"
-          value={style.family}
-          onChange={(v) => set("family", v as TextStyle["family"])}
-          options={FONT_FAMILIES.map((f) => ({ value: f.id, label: f.label }))}
-        />
-        <SelectField
-          label={
-            <span className="inline-flex items-center gap-1">
-              字重
-              {!fontLoaded && (
-                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-              )}
-            </span>
-          }
-          value={style.weight}
-          onChange={(v) => set("weight", v as TextStyle["weight"])}
-          options={WEIGHTS.map((w) => ({ value: w.id, label: w.label }))}
-        />
-      </div>
-
-      {/* Row 2: size + align */}
-      <div className="grid grid-cols-2 gap-2">
-        <Segmented
-          label="字級"
-          value={style.sizePreset}
-          onChange={(v) => set("sizePreset", v as SizePreset)}
-          options={(Object.keys(SIZE_PRESETS) as SizePreset[]).map((k) => ({
-            value: k,
-            node: (
-              <span
-                className="font-semibold"
-                style={{
-                  fontSize:
-                    k === "S" ? 11 : k === "M" ? 14 : 18,
-                  lineHeight: 1,
-                }}
-              >
-                A
-              </span>
-            ),
-            aria: SIZE_PRESETS[k].label,
-          }))}
-        />
-        <Segmented
-          label="對齊"
-          value={style.align}
-          onChange={(v) => set("align", v as TextStyle["align"])}
-          options={ALIGN_OPTS.map(({ v, Icon }) => ({
-            value: v,
-            node: <Icon className="h-4 w-4" />,
-            aria: v,
-          }))}
-        />
-      </div>
-
-      {/* Row 3: line-height + bg-mode */}
-      <div className="grid grid-cols-2 gap-2">
-        <Segmented
-          label="行距"
-          value={style.linePreset}
-          onChange={(v) => set("linePreset", v as LinePreset)}
-          options={(Object.keys(LINE_PRESETS) as LinePreset[]).map((k) => ({
-            value: k,
-            node: <LineIcon variant={k} />,
-            aria: LINE_PRESETS[k].label,
-          }))}
-        />
+      {/* Color (full | half on wide) + Background */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div>
-          <Label>底色</Label>
+          <Label>{t("panel.color")}</Label>
+          <div className="mt-1 flex items-center gap-1.5">
+            <label className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-input">
+              <input
+                type="color"
+                value={style.color}
+                onChange={(e) => set("color", e.target.value)}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                aria-label={t("panel.color")}
+              />
+              <div
+                className="h-full w-full"
+                style={{
+                  background:
+                    "conic-gradient(from 180deg, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6, #ec4899, #ef4444)",
+                }}
+              />
+            </label>
+            <div className="flex flex-1 flex-wrap gap-1">
+              {SWATCHES.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => set("color", c)}
+                  aria-label={c}
+                  className={`h-7 w-7 rounded-md border transition ${
+                    style.color.toLowerCase() === c
+                      ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                      : "border-input"
+                  }`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <Label>{t("panel.bg")}</Label>
           <div className="mt-1 grid grid-cols-3 gap-1">
-            {BG_MODES.map(({ v, label }) => (
+            {BG_MODES.map((v) => (
               <button
                 key={v}
                 type="button"
                 onClick={() => set("bgMode", v)}
-                aria-label={label}
+                aria-label={t(`bg.${v}`)}
                 className={`relative flex h-8 items-center justify-center overflow-hidden rounded-md border text-xs font-semibold transition ${
                   style.bgMode === v
                     ? "border-primary ring-2 ring-primary/40"
@@ -158,42 +119,54 @@ export function StyleControls({ style, onChange }: Props) {
         </div>
       </div>
 
-      {/* Row 4: color picker */}
-      <div>
-        <Label>顏色</Label>
-        <div className="mt-1 flex items-center gap-1.5">
-          <label className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-input">
-            <input
-              type="color"
-              value={style.color}
-              onChange={(e) => set("color", e.target.value)}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              aria-label="自訂顏色"
-            />
-            <div
-              className="h-full w-full"
-              style={{
-                background: `conic-gradient(from 180deg, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6, #ec4899, #ef4444)`,
-              }}
-            />
-          </label>
-          <div className="flex flex-1 flex-wrap gap-1">
-            {SWATCHES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => set("color", c)}
-                aria-label={c}
-                className={`h-7 w-7 rounded-md border transition ${
-                  style.color.toLowerCase() === c
-                    ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
-                    : "border-input"
-                }`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
-        </div>
+      {/* Weight | Family — always 2 cols */}
+      <div className="grid grid-cols-2 gap-2">
+        <SelectField
+          label={
+            <span className="inline-flex items-center gap-1">
+              {t("panel.weight")}
+              {!fontLoaded && (
+                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+              )}
+            </span>
+          }
+          value={style.weight}
+          onChange={(v) => set("weight", v as TextStyle["weight"])}
+          options={WEIGHT_IDS.map((id) => ({ value: id, label: t(`weight.${id}`) }))}
+        />
+        <SelectField
+          label={t("panel.family")}
+          value={style.family}
+          onChange={(v) => set("family", v as TextStyle["family"])}
+          options={FONT_FAMILY_IDS.map((id) => ({
+            value: id,
+            label: t(`family.${id}`),
+          }))}
+        />
+      </div>
+
+      {/* Align | Line — full on narrow, half on wide */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <Segmented
+          label={t("panel.align")}
+          value={style.align}
+          onChange={(v) => set("align", v as TextStyle["align"])}
+          options={ALIGN_OPTS.map(({ v, Icon }) => ({
+            value: v,
+            node: <Icon className="h-4 w-4" />,
+            aria: t(`align.${v}`),
+          }))}
+        />
+        <Segmented
+          label={t("panel.line")}
+          value={style.linePreset}
+          onChange={(v) => set("linePreset", v as LinePreset)}
+          options={(Object.keys(LINE_PRESETS) as LinePreset[]).map((k) => ({
+            value: k,
+            node: <LineIcon variant={k} />,
+            aria: t(`line.${k}`),
+          }))}
+        />
       </div>
     </div>
   )
@@ -302,9 +275,7 @@ function BgModePreview({
 }) {
   if (mode === "transparent") {
     return (
-      <span
-        className="inline-flex h-full w-full items-center justify-center bg-[linear-gradient(45deg,#e5e7eb_25%,transparent_25%),linear-gradient(-45deg,#e5e7eb_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e5e7eb_75%),linear-gradient(-45deg,transparent_75%,#e5e7eb_75%)] bg-[length:6px_6px] bg-[position:0_0,0_3px,3px_-3px,-3px_0]"
-      >
+      <span className="inline-flex h-full w-full items-center justify-center bg-[linear-gradient(45deg,#e5e7eb_25%,transparent_25%),linear-gradient(-45deg,#e5e7eb_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e5e7eb_75%),linear-gradient(-45deg,transparent_75%,#e5e7eb_75%)] bg-[length:6px_6px] bg-[position:0_0,0_3px,3px_-3px,-3px_0]">
         <span style={{ color }}>Aa</span>
       </span>
     )
