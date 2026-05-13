@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
-import { Copy, Download, ImagePlus, Plus, Trash2 } from "lucide-react"
+import {
+  Copy,
+  Download,
+  ImagePlus,
+  Plus,
+  RotateCcw,
+  Trash2,
+} from "lucide-react"
 import { ensureFontLoaded } from "@/lib/fonts"
 import {
   drawLayer,
@@ -23,7 +30,13 @@ import {
 } from "@/lib/export"
 import { usePinchGesture } from "@/lib/gestures"
 import { useI18n } from "@/lib/i18n"
+import { useHasFinePointer } from "@/lib/usePointer"
 import { StyleControls } from "./StyleControls"
+
+function normalizeAngle(deg: number): number {
+  const m = ((deg % 360) + 540) % 360 - 180
+  return Math.round(m * 10) / 10
+}
 
 type Image = {
   el: HTMLImageElement
@@ -33,6 +46,7 @@ type Image = {
 
 export function ImageEditor() {
   const { t } = useI18n()
+  const hasFinePointer = useHasFinePointer()
   const [image, setImage] = useState<Image | null>(null)
   const [layers, setLayers] = useState<TextLayer[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -187,7 +201,7 @@ export function ImageEditor() {
           )
           return {
             ...l,
-            rotation: ps.rotation + rotation,
+            rotation: normalizeAngle(ps.rotation + rotation),
             style: { ...l.style, size: newSize },
           }
         }),
@@ -358,10 +372,8 @@ export function ImageEditor() {
           {selectedLayer ? (
             <>
               <div>
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    {t("panel.size.hint.rotate", { n: selectedLayer.style.size })}
-                  </span>
+                <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  {t("panel.text.label")}
                 </div>
                 <input
                   type="text"
@@ -375,6 +387,57 @@ export function ImageEditor() {
                 style={selectedLayer.style}
                 onChange={updateSelectedStyle}
               />
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {t("panel.rotation")}
+                  </span>
+                  <span className="inline-flex items-center gap-2 text-[10px] tabular-nums text-muted-foreground">
+                    {t("unit.deg", { n: Math.round(selectedLayer.rotation) })}
+                    {selectedLayer.rotation !== 0 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setLayers((prev) =>
+                            prev.map((l) =>
+                              l.id === selectedLayer.id ? { ...l, rotation: 0 } : l,
+                            ),
+                          )
+                        }
+                        aria-label={t("action.resetRotation")}
+                        title={t("action.resetRotation")}
+                        className="inline-flex items-center justify-center rounded p-0.5 hover:text-foreground"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                      </button>
+                    )}
+                  </span>
+                </div>
+                {hasFinePointer ? (
+                  <input
+                    type="range"
+                    min={-180}
+                    max={180}
+                    step={1}
+                    value={Math.round(selectedLayer.rotation)}
+                    onChange={(e) =>
+                      setLayers((prev) =>
+                        prev.map((l) =>
+                          l.id === selectedLayer.id
+                            ? { ...l, rotation: Number(e.target.value) }
+                            : l,
+                        ),
+                      )
+                    }
+                    className="mt-1 h-7 w-full accent-primary"
+                  />
+                ) : (
+                  <div className="mt-1 inline-flex items-center gap-1 rounded-md border border-input bg-muted/40 px-2 py-1 text-[11px] text-muted-foreground">
+                    <RotateCcw className="h-3 w-3" />
+                    {t("gesture.rotate")}
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <div className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">

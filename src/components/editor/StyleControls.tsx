@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { AlignCenter, AlignLeft, AlignRight, Loader2 } from "lucide-react"
+import { AlignCenter, AlignLeft, AlignRight, Loader2, Maximize2 } from "lucide-react"
 import {
   FONT_FAMILY_IDS,
   WEIGHT_IDS,
@@ -8,12 +8,16 @@ import {
 } from "@/lib/fonts"
 import {
   LINE_PRESETS,
+  SIZE_MAX,
+  SIZE_MIN,
+  clampSize,
   type BgMode,
   type LinePreset,
   type TextStyle,
 } from "@/lib/types"
 import { complementColor } from "@/lib/color"
 import { useI18n } from "@/lib/i18n"
+import { useHasFinePointer } from "@/lib/usePointer"
 
 type Props = {
   style: TextStyle
@@ -43,6 +47,7 @@ export function StyleControls({ style, onChange }: Props) {
   const { t } = useI18n()
   const fontLoaded = isFontLoaded(style.family, style.weight)
   const complement = complementColor(style.color)
+  const hasFinePointer = useHasFinePointer()
 
   useEffect(() => {
     ensureFontLoaded(style.family, style.weight).catch(() => {})
@@ -53,6 +58,32 @@ export function StyleControls({ style, onChange }: Props) {
 
   return (
     <div className="space-y-2">
+      {/* Size: slider on desktop, gesture hint on mobile */}
+      <div>
+        <div className="flex items-center justify-between">
+          <Label>{t("panel.size")}</Label>
+          <span className="text-[10px] tabular-nums text-muted-foreground">
+            {t("unit.px", { n: style.size })}
+          </span>
+        </div>
+        {hasFinePointer ? (
+          <input
+            type="range"
+            min={SIZE_MIN}
+            max={SIZE_MAX}
+            step={2}
+            value={style.size}
+            onChange={(e) => set("size", clampSize(Number(e.target.value)))}
+            className="mt-1 h-7 w-full accent-primary"
+          />
+        ) : (
+          <div className="mt-1 inline-flex items-center gap-1 rounded-md border border-input bg-muted/40 px-2 py-1 text-[11px] text-muted-foreground">
+            <Maximize2 className="h-3 w-3" />
+            {t("gesture.pinch")}
+          </div>
+        )}
+      </div>
+
       {/* Color (full | half on wide) + Background */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div>

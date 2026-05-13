@@ -1,8 +1,9 @@
 import { useState } from "react"
-import { ImageIcon, Monitor, Moon, Sun, Type } from "lucide-react"
+import { HelpCircle, ImageIcon, Monitor, Moon, Sun, Type } from "lucide-react"
 import { PureEditor } from "@/components/editor/PureEditor"
 import { ImageEditor } from "@/components/editor/ImageEditor"
 import { Splash } from "@/components/Splash"
+import { HelpModal } from "@/components/HelpModal"
 import {
   I18nProvider,
   useI18n,
@@ -34,6 +35,7 @@ function Shell() {
   const { theme, setTheme } = useTheme()
   const [mode, setMode] = useState<Mode>("pure")
   const [splashed, setSplashed] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   if (!splashed) {
     return (
@@ -58,6 +60,15 @@ function Shell() {
         </div>
 
         <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            aria-label={t("help.button")}
+            title={t("help.button")}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full border bg-background text-muted-foreground"
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
           <button
             type="button"
             onClick={() => setTheme(NEXT_THEME[theme])}
@@ -110,6 +121,8 @@ function Shell() {
       <div className="flex-1 min-h-0 overflow-hidden">
         {mode === "pure" ? <PureEditor /> : <ImageEditor />}
       </div>
+
+      <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </main>
   )
 }

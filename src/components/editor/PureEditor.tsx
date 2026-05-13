@@ -177,7 +177,7 @@ export function PureEditor() {
           <div>
             <div className="mb-1 flex items-center justify-between gap-2">
               <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                {t("panel.size.hint", { n: style.size })}
+                {t("panel.text.label")}
               </span>
               <span className="text-[10px] text-muted-foreground tabular-nums">
                 {t("panel.text.charCount", { n: charCount })}
