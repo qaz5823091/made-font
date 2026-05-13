@@ -1,12 +1,12 @@
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState } from "react";
 
-export type Locale = "zh" | "en"
+export type Locale = "zh" | "en";
 
-type Messages = Record<string, string>
+type Messages = Record<string, string>;
 
 const ZH: Messages = {
   "app.title": "MadeFont",
-  "app.subtitle": "字型 → 圖片",
+  "app.subtitle": "造字趣",
   "app.description": "用網頁打造你的自訂字型圖片。MadeFont！",
   "mode.pure": "純文字",
   "mode.image": "圖片合成",
@@ -15,7 +15,7 @@ const ZH: Messages = {
   "theme.light": "淺色",
   "theme.dark": "深色",
   "locale.switch": "切換語言",
-  "splash.subtitle": "字型 → 圖片",
+  "splash.subtitle": "造字趣",
 
   "panel.text.label": "文字",
   "panel.text.placeholder": "輸入文字…",
@@ -47,6 +47,7 @@ const ZH: Messages = {
   "align.center": "置中",
   "align.right": "靠右",
 
+  "action.downloadSvg": "下載 SVG",
   "action.copy": "複製圖片",
   "action.download": "下載 PNG",
   "action.import": "匯入",
@@ -103,7 +104,7 @@ const ZH: Messages = {
   "help.terms.disclaimer.title": "免責",
   "help.terms.disclaimer.body":
     "本服務由社群維護，不對輸出結果負責。請確認你輸入的內容與輸出的圖片不侵犯第三方權益。",
-}
+};
 
 const EN: Messages = {
   "app.title": "MadeFont",
@@ -148,6 +149,7 @@ const EN: Messages = {
   "align.center": "Center",
   "align.right": "Right",
 
+  "action.downloadSvg": "Download SVG",
   "action.copy": "Copy",
   "action.download": "Download",
   "action.import": "Import",
@@ -160,11 +162,12 @@ const EN: Messages = {
   "toast.downloading": "Download started",
   "toast.downloadFailed": "Download failed",
   "error.exportFailed": "Failed to export PNG",
-  "error.clipboardUnsupported": "This browser cannot copy images to the clipboard",
+  "error.clipboardUnsupported":
+    "This browser cannot copy images to the clipboard",
 
   "image.dropzone.title": "Tap to import an image",
   "image.dropzone.hint": "PNG / JPG / WebP",
-  "image.empty": "Tap a text on the canvas, or press \"Add text\".",
+  "image.empty": 'Tap a text on the canvas, or press "Add text".',
   "image.needImage": "Import an image first.",
 
   "font.loading": "Loading font…",
@@ -204,58 +207,65 @@ const EN: Messages = {
   "help.terms.disclaimer.title": "Disclaimer",
   "help.terms.disclaimer.body":
     "This service is community-maintained and ships as-is. You're responsible for ensuring that anything you type and anything you export does not infringe on third-party rights.",
-}
+};
 
-const MESSAGES: Record<Locale, Messages> = { zh: ZH, en: EN }
+const MESSAGES: Record<Locale, Messages> = { zh: ZH, en: EN };
 
-export type TFn = (key: string, vars?: Record<string, string | number>) => string
+export type TFn = (
+  key: string,
+  vars?: Record<string, string | number>,
+) => string;
 
 type Ctx = {
-  locale: Locale
-  setLocale: (l: Locale) => void
-  t: TFn
-}
+  locale: Locale;
+  setLocale: (l: Locale) => void;
+  t: TFn;
+};
 
-const I18nContext = createContext<Ctx | null>(null)
+const I18nContext = createContext<Ctx | null>(null);
 
-const STORAGE_KEY = "made-font.locale"
+const STORAGE_KEY = "made-font.locale";
 
 function detectInitialLocale(): Locale {
-  if (typeof window === "undefined") return "zh"
-  const stored = window.localStorage.getItem(STORAGE_KEY) as Locale | null
-  if (stored === "zh" || stored === "en") return stored
-  return window.navigator.language?.toLowerCase().startsWith("zh") ? "zh" : "en"
+  if (typeof window === "undefined") return "zh";
+  const stored = window.localStorage.getItem(STORAGE_KEY) as Locale | null;
+  if (stored === "zh" || stored === "en") return stored;
+  return window.navigator.language?.toLowerCase().startsWith("zh")
+    ? "zh"
+    : "en";
 }
 
 export function useI18nProvider() {
-  const [locale, setLocaleState] = useState<Locale>(() => detectInitialLocale())
+  const [locale, setLocaleState] = useState<Locale>(() =>
+    detectInitialLocale(),
+  );
 
   const setLocale = (next: Locale) => {
-    setLocaleState(next)
+    setLocaleState(next);
     try {
-      window.localStorage.setItem(STORAGE_KEY, next)
+      window.localStorage.setItem(STORAGE_KEY, next);
     } catch {}
-  }
+  };
 
   useEffect(() => {
-    document.documentElement.lang = locale === "zh" ? "zh-Hant" : "en"
-  }, [locale])
+    document.documentElement.lang = locale === "zh" ? "zh-Hant" : "en";
+  }, [locale]);
 
   const t: TFn = (key, vars) => {
-    const msg = MESSAGES[locale][key] ?? MESSAGES.zh[key] ?? key
-    if (!vars) return msg
+    const msg = MESSAGES[locale][key] ?? MESSAGES.zh[key] ?? key;
+    if (!vars) return msg;
     return msg.replace(/\{(\w+)\}/g, (_, k) =>
       vars[k] !== undefined ? String(vars[k]) : `{${k}}`,
-    )
-  }
+    );
+  };
 
-  return { locale, setLocale, t }
+  return { locale, setLocale, t };
 }
 
-export const I18nProvider = I18nContext.Provider
+export const I18nProvider = I18nContext.Provider;
 
 export function useI18n(): Ctx {
-  const ctx = useContext(I18nContext)
-  if (!ctx) throw new Error("useI18n must be used inside I18nProvider")
-  return ctx
+  const ctx = useContext(I18nContext);
+  if (!ctx) throw new Error("useI18n must be used inside I18nProvider");
+  return ctx;
 }
