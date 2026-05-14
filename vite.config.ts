@@ -2,9 +2,10 @@ import path from "node:path"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
  
-export default defineConfig(({ command }) => ({
+export default defineConfig({
   plugins: [react()],
-  base: "/", 
+  // 無論什麼情況都使用根目錄，適合已綁定獨立子網域的專案
+  base: "/",
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -14,4 +15,4 @@ export default defineConfig(({ command }) => ({
     host: true,
     port: 5173,
   },
-}))
+})
