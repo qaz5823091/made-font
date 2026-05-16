@@ -4,6 +4,7 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
+  Check,
   Copy,
   Download,
   Italic,
@@ -44,7 +45,7 @@ import {
   rgbToHex,
 } from "@/lib/color"
 import { useI18n } from "@/lib/i18n"
-import { track } from "@/lib/analytics"
+import { buildExportConfig, track } from "@/lib/analytics"
 
 const PADDING = 24
 const SWATCHES = [
@@ -250,6 +251,14 @@ export function MobileEditor({
     window.setTimeout(() => setToast(null), 1800)
   }
 
+  // While editing, swallow the default focus-on-mousedown that toolbars and
+  // popovers would otherwise trigger. Without this, tapping any button blurs
+  // the textarea, the OS dismisses the keyboard, and the editor unmounts
+  // before the button's onClick runs (so the tap appears to do nothing).
+  const preserveFocusIfEditing = (e: React.MouseEvent) => {
+    if (editingRef.current) e.preventDefault()
+  }
+
   const exportBlob = useCallback(async () => {
     draw()
     if (!canvasRef.current) return null
@@ -264,7 +273,10 @@ export function MobileEditor({
       return blob
     })()
     copyBlobToClipboard(blobPromise)
-      .then(() => { flash(t("toast.copied")); track.copyImage("mobile") })
+      .then(() => {
+        flash(t("toast.copied"))
+        track.copyImage(buildExportConfig("mobile", style))
+      })
       .catch((err) =>
         flash(err instanceof Error ? err.message : t("toast.copyFailed")),
       )
@@ -276,7 +288,7 @@ export function MobileEditor({
       if (!blob) return
       downloadBlob(blob, timestampedName())
       flash(t("toast.downloading"))
-      track.downloadImage("mobile")
+      track.downloadImage(buildExportConfig("mobile", style))
     } catch (err) {
       flash(err instanceof Error ? err.message : t("toast.downloadFailed"))
     }
@@ -409,11 +421,33 @@ export function MobileEditor({
         )}
       </div>
 
+      {/* Done button — explicit exit from edit mode. Without this, with focus
+          preserved on the textarea, the user has no easy way to dismiss the
+          keyboard (since tapping outside the textarea is rare on mobile). */}
+      {editing && (
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            setEditing(false)
+            textareaRef.current?.blur()
+          }}
+          aria-label={t("action.done")}
+          title={t("action.done")}
+          className="pointer-events-auto absolute left-2 top-2 z-30 inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-1 ring-black/10"
+        >
+          <Check className="h-4 w-4" />
+        </button>
+      )}
+
       {/* Top floating bar: align + line + bg */}
       <div
         className="pointer-events-none absolute left-0 right-0 top-2 z-20 flex justify-center px-2"
       >
-        <div className="pointer-events-auto flex items-center gap-0.5 rounded-full bg-background/85 px-1.5 py-1 shadow-md ring-1 ring-black/5 backdrop-blur">
+        <div
+          className="pointer-events-auto flex items-center gap-0.5 rounded-full bg-background/85 px-1.5 py-1 shadow-md ring-1 ring-black/5 backdrop-blur"
+          onMouseDown={preserveFocusIfEditing}
+        >
           <PillBtn
             active={style.align === "left"}
             onClick={() => { set("align", "left"); track.changeStyle("align", "left") }}
@@ -467,7 +501,10 @@ export function MobileEditor({
         style={{ bottom: keyboardOffset }}
       >
         <div className="relative flex items-center">
-        <div className="pointer-events-auto mx-auto flex w-fit items-center gap-1 rounded-full bg-background/85 px-2 py-1.5 shadow-md ring-1 ring-black/5 backdrop-blur">
+        <div
+          className="pointer-events-auto mx-auto flex w-fit items-center gap-1 rounded-full bg-background/85 px-2 py-1.5 shadow-md ring-1 ring-black/5 backdrop-blur"
+          onMouseDown={preserveFocusIfEditing}
+        >
           <button
             ref={colorBtnRef}
             type="button"
@@ -558,6 +595,7 @@ export function MobileEditor({
       {openPanel === "color" && (
         <div
           ref={popoverRef}
+          onMouseDown={preserveFocusIfEditing}
           className="absolute bottom-20 left-3 z-30 rounded-2xl bg-background/95 p-3 shadow-xl ring-1 ring-black/10 backdrop-blur"
         >
           <HueWheel

@@ -54,6 +54,7 @@ const ZH: Messages = {
   "action.change": "更換",
   "action.addText": "新增文字",
   "action.delete": "刪除",
+  "action.done": "完成編輯",
 
   "toast.copied": "已複製到剪貼簿",
   "toast.copyFailed": "複製失敗",
@@ -162,6 +163,7 @@ const EN: Messages = {
   "action.change": "Replace",
   "action.addText": "Add text",
   "action.delete": "Delete",
+  "action.done": "Done editing",
 
   "toast.copied": "Copied to clipboard",
   "toast.copyFailed": "Copy failed",

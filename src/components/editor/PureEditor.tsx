@@ -20,7 +20,7 @@ import {
 } from "@/lib/export"
 import { usePinchGesture } from "@/lib/gestures"
 import { useI18n } from "@/lib/i18n"
-import { track } from "@/lib/analytics"
+import { buildExportConfig, track } from "@/lib/analytics"
 import { StyleControls } from "./StyleControls"
 
 const PADDING = 48
@@ -139,7 +139,10 @@ export function PureEditor({ text, setText, style, setStyle }: Props) {
       return blob
     })()
     copyBlobToClipboard(blobPromise)
-      .then(() => { flash(t("toast.copied")); track.copyImage("desktop") })
+      .then(() => {
+        flash(t("toast.copied"))
+        track.copyImage(buildExportConfig("desktop", style))
+      })
       .catch((err) =>
         flash(err instanceof Error ? err.message : t("toast.copyFailed")),
       )
@@ -151,7 +154,7 @@ export function PureEditor({ text, setText, style, setStyle }: Props) {
       if (!blob) return
       downloadBlob(blob, timestampedName())
       flash(t("toast.downloading"))
-      track.downloadImage("desktop")
+      track.downloadImage(buildExportConfig("desktop", style))
     } catch (err) {
       flash(err instanceof Error ? err.message : t("toast.downloadFailed"))
     }
