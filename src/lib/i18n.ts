@@ -96,6 +96,12 @@ const ZH: Messages = {
   "help.terms.font.IBMPlexSans.title": "IBM Plex Sans",
   "help.terms.font.IBMPlexSans.desc":
     "IBM 設計團隊所製作的開源無襯線字型，支援多種權重與斜體。",
+  "help.terms.font.DelaGothicOne.title": "Dela Gothic One",
+  "help.terms.font.DelaGothicOne.desc":
+    "由 Yuki Nakajima 與 artakana 設計的日系超粗黑體，造形飽滿厚實，適合做標題與海報主視覺。透過 Google Fonts 開源釋出。",
+  "help.terms.font.ChenYuluoyanThin.title": "辰宇落雁體 Thin",
+  "help.terms.font.ChenYuluoyanThin.desc":
+    "由王立宇與劉韋辰於高中自主學習計畫中合作完成的繁體中文手寫字型，纖細而富有溫度，適合書信與抒情排版。",
   "help.terms.label.repo": "原始 Repo",
   "help.terms.label.license": "授權",
   "help.terms.label.basedOn": "衍生自",
@@ -199,6 +205,12 @@ const EN: Messages = {
   "help.terms.font.IBMPlexSans.title": "IBM Plex Sans",
   "help.terms.font.IBMPlexSans.desc":
     "An open-source sans-serif typeface by IBM with multiple weights and italics.",
+  "help.terms.font.DelaGothicOne.title": "Dela Gothic One",
+  "help.terms.font.DelaGothicOne.desc":
+    "An ultra-bold Japanese display face by Yuki Nakajima and artakana, distributed via Google Fonts — great for headlines and poster-style art.",
+  "help.terms.font.ChenYuluoyanThin.title": "ChenYuluoyan Thin (辰宇落雁體)",
+  "help.terms.font.ChenYuluoyanThin.desc":
+    "A handwritten Traditional Chinese typeface by Wang Li-Yu and Liu Wei-Chen — delicate strokes with a warm, personal feel for letters and lyrical layouts.",
   "help.terms.label.repo": "Source repo",
   "help.terms.label.license": "License",
   "help.terms.label.basedOn": "Based on",

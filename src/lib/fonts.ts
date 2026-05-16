@@ -32,6 +32,22 @@ export const FONT_FAMILIES: FontFamily[] = [
       boldItalic: "BoldItalic",
     },
   },
+  {
+    id: "DelaGothicOne",
+    format: "truetype",
+    ext: "ttf",
+    variants: {
+      regular: "Regular",
+    },
+  },
+  {
+    id: "ChenYuluoyanThin",
+    format: "truetype",
+    ext: "ttf",
+    variants: {
+      regular: "Regular",
+    },
+  },
 ]
 
 export const FONT_FAMILY_IDS = FONT_FAMILIES.map((f) => f.id)

@@ -37,7 +37,12 @@ import {
   downloadBlob,
   timestampedName,
 } from "@/lib/export"
-import { complementColor, hslToRgb, rgbToHex } from "@/lib/color"
+import {
+  checkerBackgroundStyle,
+  complementColor,
+  hslToRgb,
+  rgbToHex,
+} from "@/lib/color"
 import { useI18n } from "@/lib/i18n"
 import { track } from "@/lib/analytics"
 
@@ -57,6 +62,8 @@ const BG_MODES: BgMode[] = ["transparent", "complement-bg", "complement-text"]
 const FAMILY_LABELS: Record<string, string> = {
   GenYoMin2TW: "源樣明朝",
   IBMPlexSans: "IBM Plex Sans",
+  DelaGothicOne: "Dela Gothic One",
+  ChenYuluoyanThin: "辰宇落雁體",
 }
 
 type Panel = "color" | null
@@ -200,18 +207,19 @@ export function MobileEditor({
     draw()
   }, [draw, fontReady, editing])
 
-  // Auto-fit: shrink displaySize until textarea/stage fits. Uses the textarea's
-  // own scroll metrics so the result matches what the user is typing.
+  // Auto-fit: shrink displaySize until textarea fits inside its own inner box.
+  // Using ta.client* (rather than stage.client*) keeps autofit correct after
+  // the bg/padding wrapper, which trims the textarea by 2 * PADDING per axis.
   useLayoutEffect(() => {
     if (!editing) return
     const ta = textareaRef.current
     const stage = stageRef.current
     if (!ta || !stage) return
-    const availW = stage.clientWidth
-    const availH = stage.clientHeight
     let size = style.size
     ta.style.fontSize = `${size}px`
     for (let i = 0; i < 24; i++) {
+      const availW = ta.clientWidth
+      const availH = ta.clientHeight
       const overW = ta.scrollWidth - availW
       const overH = ta.scrollHeight - availH
       if (overW <= 1 && overH <= 1) break
@@ -331,7 +339,10 @@ export function MobileEditor({
   }, [])
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[linear-gradient(45deg,#f1f5f9_25%,transparent_25%),linear-gradient(-45deg,#f1f5f9_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f1f5f9_75%),linear-gradient(-45deg,transparent_75%,#f1f5f9_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0] dark:bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)]">
+    <div
+      className="relative h-full w-full overflow-hidden"
+      style={checkerBackgroundStyle(style.color)}
+    >
       {/* Stage — shared bounds for preview canvas + edit textarea so visuals match */}
       <div
         ref={stageRef}
@@ -364,27 +375,37 @@ export function MobileEditor({
         )}
 
         {editing && (
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onBlur={() => setEditing(false)}
-            rows={1}
-            wrap="off"
-            className="block h-full w-full resize-none overflow-hidden border-0 bg-transparent outline-none"
+          <div
+            className="flex h-full w-full overflow-hidden"
             style={{
-              fontFamily: `"${cssFamily}"`,
-              fontSize: `${displaySize}px`,
-              lineHeight: styleLineHeight(style),
-              color: fg,
               backgroundColor: bg ?? "transparent",
-              textAlign: style.align,
-              caretColor: fg,
-              padding: `${PADDING}px`,
-              whiteSpace: "pre",
               borderRadius: bg ? 12 : 0,
+              padding: `${PADDING}px`,
+              boxSizing: "border-box",
             }}
-          />
+          >
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onBlur={() => setEditing(false)}
+              rows={1}
+              wrap="off"
+              className="block h-full w-full resize-none overflow-hidden border-0 bg-transparent outline-none"
+              style={{
+                fontFamily: `"${cssFamily}"`,
+                fontSize: `${displaySize}px`,
+                lineHeight: styleLineHeight(style),
+                color: fg,
+                textAlign: style.align,
+                caretColor: fg,
+                whiteSpace: "pre",
+                padding: 0,
+                margin: 0,
+                scrollbarWidth: "none",
+              }}
+            />
+          </div>
         )}
       </div>
 

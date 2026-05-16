@@ -54,6 +54,13 @@ const ALIGN_OPTS = [
 
 const BG_MODES: BgMode[] = ["transparent", "complement-bg", "complement-text"]
 
+const FAMILY_LABELS: Record<string, string> = {
+  GenYoMin2TW: "源樣明朝 GenYoMin2TW",
+  IBMPlexSans: "IBM Plex Sans",
+  DelaGothicOne: "Dela Gothic One",
+  ChenYuluoyanThin: "辰宇落雁體 ChenYuluoyan",
+}
+
 export function StyleControls({ style, onChange }: Props) {
   const { t } = useI18n()
   const family = getFamily(style.family)
@@ -172,7 +179,10 @@ export function StyleControls({ style, onChange }: Props) {
           label={t("panel.family")}
           value={style.family}
           onChange={(v) => { set("family", v); track.changeFont(v) }}
-          options={FONT_FAMILIES.map((f) => ({ value: f.id, label: f.id }))}
+          options={FONT_FAMILIES.map((f) => ({
+            value: f.id,
+            label: FAMILY_LABELS[f.id] ?? f.id,
+          }))}
         />
         <div>
           <Label>

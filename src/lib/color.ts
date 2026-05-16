@@ -91,3 +91,37 @@ export function complementColor(hex: string): string {
   const { r: nr, g: ng, b: nb } = hslToRgb(h, s, newL)
   return rgbToHex(nr, ng, nb)
 }
+
+/**
+ * Perceived brightness (luma) on a 0–1 scale. Used to pick a contrasting
+ * preview backdrop so the user's chosen text color is always legible.
+ */
+export function perceivedLuma(hex: string): number {
+  const { r, g, b } = hexToRgb(hex)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255
+}
+
+/**
+ * Returns CSS for a checker-pattern background that contrasts with the
+ * given text color (light text → dark surface; dark text → light surface).
+ * Both the checker squares AND the base fill are flipped, so transparent
+ * gaps never expose the page's theme color underneath. This decouples the
+ * preview backdrop from the UI theme so white-on-light and black-on-dark
+ * never disappear into the surface.
+ */
+export function checkerBackgroundStyle(textColor: string): {
+  backgroundImage: string
+  backgroundSize: string
+  backgroundPosition: string
+  backgroundColor: string
+} {
+  const lightText = perceivedLuma(textColor) > 0.55
+  const base = lightText ? "#0b1220" : "#ffffff"
+  const square = lightText ? "#1e293b" : "#e2e8f0"
+  return {
+    backgroundColor: base,
+    backgroundImage: `linear-gradient(45deg, ${square} 25%, transparent 25%), linear-gradient(-45deg, ${square} 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${square} 75%), linear-gradient(-45deg, transparent 75%, ${square} 75%)`,
+    backgroundSize: "20px 20px",
+    backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0",
+  }
+}

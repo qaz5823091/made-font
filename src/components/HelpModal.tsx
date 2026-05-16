@@ -5,7 +5,7 @@ import { useI18n } from "@/lib/i18n";
 type Tab = "usage" | "terms";
 
 type FontEntry = {
-  key: "GenYoMin2TW" | "IBMPlexSans";
+  key: "GenYoMin2TW" | "IBMPlexSans" | "DelaGothicOne" | "ChenYuluoyanThin";
   repo: string;
   license: string;
   basedOn?: string;
@@ -15,13 +15,23 @@ const FONTS: FontEntry[] = [
   {
     key: "GenYoMin2TW",
     repo: "https://github.com/ButTaiwan/genyo-font",
-    license: "https://github.com/ButTaiwan/genyo-font/blob/master/LICENSE.txt",
+    license: "https://github.com/ButTaiwan/genyo-font/blob/master/SIL_Open_Font_License_1.1.txt",
     basedOn: "https://github.com/adobe-fonts/source-han-serif",
   },
   {
     key: "IBMPlexSans",
     repo: "https://github.com/IBM/plex",
     license: "https://github.com/IBM/plex/blob/master/LICENSE.txt",
+  },
+  {
+    key: "DelaGothicOne",
+    repo: "https://fonts.google.com/specimen/Dela+Gothic+One",
+    license: "https://fonts.google.com/specimen/Dela+Gothic+One/license",
+  },
+  {
+    key: "ChenYuluoyanThin",
+    repo: "https://github.com/Chenyu-otf/chenyuluoyan_thin",
+    license: "https://github.com/Chenyu-otf/chenyuluoyan_thin/blob/main/license.txt",
   },
 ];
 
