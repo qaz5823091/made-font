@@ -56,7 +56,7 @@ function rgbToHsl(r: number, g: number, b: number) {
   return { h, s: s * 100, l: l * 100 }
 }
 
-function hslToRgb(h: number, s: number, l: number) {
+export function hslToRgb(h: number, s: number, l: number) {
   s /= 100
   l /= 100
   const c = (1 - Math.abs(2 * l - 1)) * s

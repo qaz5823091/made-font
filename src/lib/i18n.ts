@@ -49,7 +49,7 @@ const ZH: Messages = {
 
   "action.downloadSvg": "下載 SVG",
   "action.copy": "複製圖片",
-  "action.download": "下載 PNG",
+  "action.download": "下載圖片",
   "action.import": "匯入",
   "action.change": "更換",
   "action.addText": "新增文字",

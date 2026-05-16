@@ -27,6 +27,47 @@ export function measureText(
   return { lines, width: maxWidth, height, lineHeightPx }
 }
 
+/**
+ * Same as measureText but wraps each newline-separated segment so that no
+ * line exceeds maxWidth (matches the textarea's break-word behavior so the
+ * canvas and the textarea render the same line breaks).
+ */
+export function measureTextWrapped(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  style: TextStyle,
+  maxWidth: number,
+): LineMetrics {
+  ctx.font = cssFontShorthand(style)
+  const segments = text.length === 0 ? [""] : text.split("\n")
+  const lines: string[] = []
+  for (const seg of segments) {
+    if (seg.length === 0) {
+      lines.push("")
+      continue
+    }
+    let current = ""
+    for (const ch of seg) {
+      const candidate = current + ch
+      if (ctx.measureText(candidate).width <= maxWidth || current === "") {
+        current = candidate
+      } else {
+        lines.push(current)
+        current = ch
+      }
+    }
+    if (current !== "") lines.push(current)
+  }
+  let widest = 0
+  for (const line of lines) {
+    const w = ctx.measureText(line).width
+    if (w > widest) widest = w
+  }
+  const lineHeightPx = stylePx(style) * styleLineHeight(style)
+  const height = lines.length * lineHeightPx
+  return { lines, width: widest, height, lineHeightPx }
+}
+
 export function cssFontShorthand(style: TextStyle): string {
   const family = getFamily(style.family)
   const key = resolveVariant(family, style.bold, style.italic)

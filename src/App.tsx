@@ -1,7 +1,9 @@
 import { useState } from "react"
 import { HelpCircle, ImageIcon, Monitor, Moon, Sun, Type } from "lucide-react"
 import { PureEditor } from "@/components/editor/PureEditor"
+import { MobileEditor } from "@/components/editor/MobileEditor"
 import { ImageEditor } from "@/components/editor/ImageEditor"
+import { useMediaQuery } from "@/lib/useMediaQuery"
 import { Splash } from "@/components/Splash"
 import { HelpModal } from "@/components/HelpModal"
 import {
@@ -10,6 +12,7 @@ import {
   useI18nProvider,
   type Locale,
 } from "@/lib/i18n"
+import { DEFAULT_STYLE, type TextStyle } from "@/lib/types"
 import {
   ThemeProvider,
   useTheme,
@@ -35,10 +38,15 @@ const IMAGE_MODE_ENABLED = false
 function Shell() {
   const { t, locale, setLocale } = useI18n()
   const { theme, setTheme } = useTheme()
+  const isDesktop = useMediaQuery("(min-width: 768px)")
   const [mode, setMode] = useState<Mode>("pure")
   const [splashed, setSplashed] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  // Shared editor state — keeps content consistent across mobile/desktop layouts.
+  const [pureText, setPureText] = useState(() => t("pure.placeholderText"))
+  const [pureStyle, setPureStyle] = useState<TextStyle>(DEFAULT_STYLE)
+  const [mobileEditing, setMobileEditing] = useState(false)
 
   const flash = (msg: string) => {
     setToast(msg)
@@ -65,6 +73,7 @@ function Shell() {
 
   return (
     <main className="flex h-[100dvh] flex-col bg-background text-foreground">
+      {!(mobileEditing && !isDesktop) && (
       <header className="flex items-center justify-between gap-2 border-b bg-card px-3 py-2">
         <div className="flex items-center gap-2 min-w-0">
           <img
@@ -72,8 +81,13 @@ function Shell() {
             alt=""
             className="h-7 w-7 shrink-0 rounded-md"
           />
-          <div className="truncate text-sm font-semibold leading-none">
-            {t("app.title")}
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <div className="truncate text-sm font-semibold leading-none">
+              {t("app.title")}
+            </div>
+            <span className="text-[10px] font-medium leading-none text-muted-foreground tabular-nums">
+              v{__APP_VERSION__}
+            </span>
           </div>
         </div>
 
@@ -138,9 +152,30 @@ function Shell() {
           </button>
         </div>
       </header>
+      )}
 
       <div className="flex-1 min-h-0 overflow-hidden">
-        {mode === "pure" || !IMAGE_MODE_ENABLED ? <PureEditor /> : <ImageEditor />}
+        {mode === "pure" || !IMAGE_MODE_ENABLED ? (
+          isDesktop ? (
+            <PureEditor
+              text={pureText}
+              setText={setPureText}
+              style={pureStyle}
+              setStyle={setPureStyle}
+            />
+          ) : (
+            <MobileEditor
+              text={pureText}
+              setText={setPureText}
+              style={pureStyle}
+              setStyle={setPureStyle}
+              editing={mobileEditing}
+              setEditing={setMobileEditing}
+            />
+          )
+        ) : (
+          <ImageEditor />
+        )}
       </div>
 
       <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />

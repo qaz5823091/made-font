@@ -87,9 +87,13 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
           />
         </div>
 
-        <div className="flex-1 overflow-auto px-4 py-4 text-sm leading-relaxed pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="flex-1 overflow-auto px-4 py-4 text-sm leading-relaxed">
           {tab === "usage" ? <UsagePage /> : <TermsPage />}
         </div>
+
+        <footer className="border-t px-4 py-2 text-center text-[11px] text-muted-foreground pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          © {new Date().getFullYear()} @cppdesigns
+        </footer>
       </div>
     </div>
   )

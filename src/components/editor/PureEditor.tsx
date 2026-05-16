@@ -7,7 +7,6 @@ import {
   resolveColors,
 } from "@/lib/canvas"
 import {
-  DEFAULT_STYLE,
   SIZE_MAX,
   SIZE_MIN,
   type TextStyle,
@@ -24,10 +23,15 @@ import { StyleControls } from "./StyleControls"
 
 const PADDING = 48
 
-export function PureEditor() {
+type Props = {
+  text: string
+  setText: (v: string) => void
+  style: TextStyle
+  setStyle: (v: TextStyle | ((s: TextStyle) => TextStyle)) => void
+}
+
+export function PureEditor({ text, setText, style, setStyle }: Props) {
   const { t } = useI18n()
-  const [text, setText] = useState(() => t("pure.placeholderText"))
-  const [style, setStyle] = useState<TextStyle>(DEFAULT_STYLE)
   const [fontReady, setFontReady] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -123,15 +127,19 @@ export function PureEditor() {
     window.setTimeout(() => setToast(null), 1800)
   }
 
-  const handleCopy = async () => {
-    try {
+  const handleCopy = () => {
+    // Build the blob promise synchronously so Safari keeps the user-gesture
+    // context required for clipboard writes.
+    const blobPromise = (async () => {
       const blob = await exportBlob()
-      if (!blob) return
-      await copyBlobToClipboard(blob)
-      flash(t("toast.copied"))
-    } catch (err) {
-      flash(err instanceof Error ? err.message : t("toast.copyFailed"))
-    }
+      if (!blob) throw new Error(t("error.exportFailed"))
+      return blob
+    })()
+    copyBlobToClipboard(blobPromise)
+      .then(() => flash(t("toast.copied")))
+      .catch((err) =>
+        flash(err instanceof Error ? err.message : t("toast.copyFailed")),
+      )
   }
 
   const handleDownload = async () => {
@@ -149,8 +157,9 @@ export function PureEditor() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-1 min-h-0 overflow-auto bg-[linear-gradient(45deg,#f1f5f9_25%,transparent_25%),linear-gradient(-45deg,#f1f5f9_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f1f5f9_75%),linear-gradient(-45deg,transparent_75%,#f1f5f9_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0] dark:bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)]">
-        <div className="flex min-h-full items-center justify-center p-3">
+      <div className="relative flex-1 min-h-0">
+        <div className="absolute inset-0 overflow-auto bg-[linear-gradient(45deg,#f1f5f9_25%,transparent_25%),linear-gradient(-45deg,#f1f5f9_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f1f5f9_75%),linear-gradient(-45deg,transparent_75%,#f1f5f9_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0] dark:bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)]">
+          <div className="flex min-h-full items-center justify-center p-3">
           <div className="relative">
             {!fontReady && (
               <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/70 backdrop-blur-sm dark:bg-black/40">
@@ -169,6 +178,10 @@ export function PureEditor() {
               className="max-w-full rounded-lg shadow-sm ring-1 ring-black/5 [touch-action:pan-x_pan-y]"
             />
           </div>
+        </div>
+        </div>
+        <div className="pointer-events-none absolute bottom-2 right-3 select-none text-[11px] font-medium text-muted-foreground/70">
+          @cppdesigns
         </div>
       </div>
 
