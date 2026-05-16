@@ -82,6 +82,7 @@ export function MobileEditor({
   const [fontReady, setFontReady] = useState(false)
   const [openPanel, setOpenPanel] = useState<Panel>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [keyboardOffset, setKeyboardOffset] = useState(0)
   // Shared display size — both textarea (while editing) and canvas (preview)
   // render at this size, so the visual is consistent across modes. Auto-fit
   // shrinks this when content overflows the stage area.
@@ -303,17 +304,39 @@ export function MobileEditor({
     requestAnimationFrame(() => textareaRef.current?.focus())
   }
 
-  // Prevent buttons from stealing focus from the textarea while editing.
-  const keepFocus = (e: React.PointerEvent | React.MouseEvent) => {
-    if (editing) e.preventDefault()
-  }
+  // Keep a ref so the visualViewport handler can read editing state without
+  // re-subscribing every time it changes.
+  const editingRef = useRef(editing)
+  useEffect(() => { editingRef.current = editing }, [editing])
+
+  // Single visualViewport effect: tracks keyboard height for toolbar offset,
+  // and detects keyboard dismissal when onBlur doesn't fire (iOS Done / Android back).
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const update = () => {
+      const offset = Math.max(0, window.innerHeight - vv.offsetTop - vv.height)
+      setKeyboardOffset(offset)
+      if (editingRef.current && offset < 50) {
+        setEditing(false)
+        textareaRef.current?.blur()
+      }
+    }
+    vv.addEventListener("resize", update)
+    vv.addEventListener("scroll", update)
+    return () => {
+      vv.removeEventListener("resize", update)
+      vv.removeEventListener("scroll", update)
+    }
+  }, [])
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-[linear-gradient(45deg,#f1f5f9_25%,transparent_25%),linear-gradient(-45deg,#f1f5f9_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f1f5f9_75%),linear-gradient(-45deg,transparent_75%,#f1f5f9_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0] dark:bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)]">
       {/* Stage — shared bounds for preview canvas + edit textarea so visuals match */}
       <div
         ref={stageRef}
-        className="absolute inset-x-2 top-12 bottom-16 flex items-center justify-center overflow-hidden"
+        className="absolute inset-x-2 top-12 flex items-center justify-center overflow-hidden"
+        style={{ bottom: keyboardOffset + 64 }}
       >
         {!editing && (
           <button
@@ -368,7 +391,6 @@ export function MobileEditor({
       {/* Top floating bar: align + line + bg */}
       <div
         className="pointer-events-none absolute left-0 right-0 top-2 z-20 flex justify-center px-2"
-        onPointerDown={keepFocus}
       >
         <div className="pointer-events-auto flex items-center gap-0.5 rounded-full bg-background/85 px-1.5 py-1 shadow-md ring-1 ring-black/5 backdrop-blur">
           <PillBtn
@@ -420,8 +442,8 @@ export function MobileEditor({
 
       {/* Bottom toolbar: color, family, bold, italic, copy/download */}
       <div
-        className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2"
-        onPointerDown={keepFocus}
+        className="pointer-events-none absolute left-0 right-0 z-20 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2"
+        style={{ bottom: keyboardOffset }}
       >
         <div className="pointer-events-auto mx-auto flex w-fit items-center gap-1 rounded-full bg-background/85 px-2 py-1.5 shadow-md ring-1 ring-black/5 backdrop-blur">
           <button
@@ -511,7 +533,6 @@ export function MobileEditor({
         <div
           ref={popoverRef}
           className="absolute bottom-20 left-3 z-30 rounded-2xl bg-background/95 p-3 shadow-xl ring-1 ring-black/10 backdrop-blur"
-          onPointerDown={keepFocus}
         >
           <HueWheel
             value={style.color}
@@ -542,7 +563,10 @@ export function MobileEditor({
 
       {/* @cppdesigns watermark — pinned just above the bottom toolbar so it
           stays clear of both the stage and the controls. Never exported. */}
-      <div className="pointer-events-none absolute bottom-16 right-3 z-10 select-none text-[11px] font-medium text-muted-foreground/70">
+      <div
+        className="pointer-events-none absolute right-3 z-10 select-none text-[11px] font-medium text-muted-foreground/70"
+        style={{ bottom: keyboardOffset + 64 }}
+      >
         @cppdesigns
       </div>
 
