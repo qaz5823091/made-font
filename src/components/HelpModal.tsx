@@ -1,22 +1,21 @@
-import { useEffect, useState } from "react"
-import { ExternalLink, HelpCircle, ScrollText, X } from "lucide-react"
-import { useI18n } from "@/lib/i18n"
+import { useEffect, useState } from "react";
+import { ExternalLink, HelpCircle, ScrollText, X } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
-type Tab = "usage" | "terms"
+type Tab = "usage" | "terms";
 
 type FontEntry = {
-  key: "GenYoMin2TW" | "IBMPlexSans"
-  repo: string
-  license: string
-  basedOn?: string
-}
+  key: "GenYoMin2TW" | "IBMPlexSans";
+  repo: string;
+  license: string;
+  basedOn?: string;
+};
 
 const FONTS: FontEntry[] = [
   {
     key: "GenYoMin2TW",
     repo: "https://github.com/ButTaiwan/genyo-font",
-    license:
-      "https://github.com/ButTaiwan/genyo-font/blob/master/LICENSE.txt",
+    license: "https://github.com/ButTaiwan/genyo-font/blob/master/LICENSE.txt",
     basedOn: "https://github.com/adobe-fonts/source-han-serif",
   },
   {
@@ -24,27 +23,33 @@ const FONTS: FontEntry[] = [
     repo: "https://github.com/IBM/plex",
     license: "https://github.com/IBM/plex/blob/master/LICENSE.txt",
   },
-]
+];
 
-export function HelpModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { t } = useI18n()
-  const [tab, setTab] = useState<Tab>("usage")
+export function HelpModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const [tab, setTab] = useState<Tab>("usage");
 
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose()
-    }
-    document.addEventListener("keydown", onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKey)
-      document.body.style.overflow = prevOverflow
-    }
-  }, [open, onClose])
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open, onClose]);
 
-  if (!open) return null
+  if (!open) return null;
 
   return (
     <div
@@ -96,7 +101,7 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
         </footer>
       </div>
     </div>
-  )
+  );
 }
 
 function Tab({
@@ -105,10 +110,10 @@ function Tab({
   active,
   onClick,
 }: {
-  label: string
-  icon: React.ReactNode
-  active: boolean
-  onClick: () => void
+  label: string;
+  icon: React.ReactNode;
+  active: boolean;
+  onClick: () => void;
 }) {
   return (
     <button
@@ -123,29 +128,32 @@ function Tab({
       {icon}
       {label}
     </button>
-  )
+  );
 }
 
 function UsagePage() {
-  const { t } = useI18n()
+  const { t } = useI18n();
   return (
     <div className="space-y-5">
       <Section title={t("help.usage.title")} />
-      <Block title={t("help.usage.pure.title")} body={t("help.usage.pure.body")} />
       <Block
+        title={t("help.usage.pure.title")}
+        body={t("help.usage.pure.body")}
+      />
+      {/* <Block
         title={t("help.usage.image.title")}
         body={t("help.usage.image.body")}
-      />
+      /> */}
       <Block
         title={t("help.usage.tips.title")}
         body={t("help.usage.tips.body")}
       />
     </div>
-  )
+  );
 }
 
 function TermsPage() {
-  const { t } = useI18n()
+  const { t } = useI18n();
   return (
     <div className="space-y-5">
       <Section title={t("help.terms.title")} />
@@ -184,7 +192,9 @@ function TermsPage() {
                 <Row
                   label={t("help.terms.label.basedOn")}
                   value={
-                    <ExtLink href={f.basedOn}>{t("help.terms.sourceHan")}</ExtLink>
+                    <ExtLink href={f.basedOn}>
+                      {t("help.terms.sourceHan")}
+                    </ExtLink>
                   }
                 />
               )}
@@ -194,19 +204,19 @@ function TermsPage() {
       </div>
 
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-200">
-        <div className="text-xs font-semibold">{t("help.terms.disclaimer.title")}</div>
+        <div className="text-xs font-semibold">
+          {t("help.terms.disclaimer.title")}
+        </div>
         <p className="mt-1 text-[12px] leading-relaxed">
           {t("help.terms.disclaimer.body")}
         </p>
       </div>
     </div>
-  )
+  );
 }
 
 function Section({ title }: { title: string }) {
-  return (
-    <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-  )
+  return <h2 className="text-base font-semibold tracking-tight">{title}</h2>;
 }
 
 function Block({ title, body }: { title: string; body: string }) {
@@ -215,7 +225,7 @@ function Block({ title, body }: { title: string; body: string }) {
       <h3 className="mb-1 text-sm font-semibold">{title}</h3>
       <p className="text-muted-foreground">{body}</p>
     </div>
-  )
+  );
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
@@ -224,10 +234,16 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <dt className="w-16 shrink-0 text-muted-foreground">{label}</dt>
       <dd className="min-w-0 break-all">{value}</dd>
     </div>
-  )
+  );
 }
 
-function ExtLink({ href, children }: { href: string; children: React.ReactNode }) {
+function ExtLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
   return (
     <a
       href={href}
@@ -238,5 +254,5 @@ function ExtLink({ href, children }: { href: string; children: React.ReactNode }
       {children}
       <ExternalLink className="h-3 w-3 shrink-0" />
     </a>
-  )
+  );
 }
