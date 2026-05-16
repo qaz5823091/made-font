@@ -39,6 +39,7 @@ import {
 } from "@/lib/export"
 import { complementColor, hslToRgb, rgbToHex } from "@/lib/color"
 import { useI18n } from "@/lib/i18n"
+import { track } from "@/lib/analytics"
 
 const PADDING = 24
 const SWATCHES = [
@@ -254,7 +255,7 @@ export function MobileEditor({
       return blob
     })()
     copyBlobToClipboard(blobPromise)
-      .then(() => flash(t("toast.copied")))
+      .then(() => { flash(t("toast.copied")); track.copyImage("mobile") })
       .catch((err) =>
         flash(err instanceof Error ? err.message : t("toast.copyFailed")),
       )
@@ -266,6 +267,7 @@ export function MobileEditor({
       if (!blob) return
       downloadBlob(blob, timestampedName())
       flash(t("toast.downloading"))
+      track.downloadImage("mobile")
     } catch (err) {
       flash(err instanceof Error ? err.message : t("toast.downloadFailed"))
     }
@@ -285,11 +287,14 @@ export function MobileEditor({
     const idx = FONT_FAMILIES.findIndex((f) => f.id === style.family)
     const next = FONT_FAMILIES[(idx + 1) % FONT_FAMILIES.length]
     set("family", next.id)
+    track.changeFont(next.id)
     flash(FAMILY_LABELS[next.id] ?? next.id)
   }
   const cycleBg = () => {
     const idx = BG_MODES.indexOf(style.bgMode)
-    set("bgMode", BG_MODES[(idx + 1) % BG_MODES.length])
+    const next = BG_MODES[(idx + 1) % BG_MODES.length]
+    set("bgMode", next)
+    track.changeStyle("bg_mode", next)
   }
 
   const enterEditing = () => {
@@ -368,21 +373,21 @@ export function MobileEditor({
         <div className="pointer-events-auto flex items-center gap-0.5 rounded-full bg-background/85 px-1.5 py-1 shadow-md ring-1 ring-black/5 backdrop-blur">
           <PillBtn
             active={style.align === "left"}
-            onClick={() => set("align", "left")}
+            onClick={() => { set("align", "left"); track.changeStyle("align", "left") }}
             aria={t("align.left")}
           >
             <AlignLeft className="h-4 w-4" />
           </PillBtn>
           <PillBtn
             active={style.align === "center"}
-            onClick={() => set("align", "center")}
+            onClick={() => { set("align", "center"); track.changeStyle("align", "center") }}
             aria={t("align.center")}
           >
             <AlignCenter className="h-4 w-4" />
           </PillBtn>
           <PillBtn
             active={style.align === "right"}
-            onClick={() => set("align", "right")}
+            onClick={() => { set("align", "right"); track.changeStyle("align", "right") }}
             aria={t("align.right")}
           >
             <AlignRight className="h-4 w-4" />
@@ -392,7 +397,7 @@ export function MobileEditor({
             <PillBtn
               key={k}
               active={style.linePreset === k}
-              onClick={() => set("linePreset", k)}
+              onClick={() => { set("linePreset", k); track.changeStyle("line_preset", k) }}
               aria={t(`line.${k}`)}
             >
               <LineIcon variant={k} />
@@ -446,7 +451,7 @@ export function MobileEditor({
           </button>
           <button
             type="button"
-            onClick={() => canBold && set("bold", !style.bold)}
+            onClick={() => { if (!canBold) return; const next = !style.bold; set("bold", next); track.changeStyle("bold", next) }}
             disabled={!canBold}
             aria-pressed={style.bold}
             aria-label={t("style.bold")}
@@ -462,7 +467,7 @@ export function MobileEditor({
           </button>
           <button
             type="button"
-            onClick={() => canItalic && set("italic", !style.italic)}
+            onClick={() => { if (!canItalic) return; const next = !style.italic; set("italic", next); track.changeStyle("italic", next) }}
             disabled={!canItalic}
             aria-pressed={style.italic}
             aria-label={t("style.italic")}

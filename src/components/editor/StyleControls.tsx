@@ -28,6 +28,7 @@ import {
 import { complementColor } from "@/lib/color"
 import { useI18n } from "@/lib/i18n"
 import { useHasFinePointer } from "@/lib/usePointer"
+import { track } from "@/lib/analytics"
 
 type Props = {
   style: TextStyle
@@ -125,7 +126,7 @@ export function StyleControls({ style, onChange }: Props) {
                 <button
                   key={c}
                   type="button"
-                  onClick={() => set("color", c)}
+                  onClick={() => { set("color", c); track.changeColor("swatch") }}
                   aria-label={c}
                   className={`h-7 w-7 rounded-md border transition ${
                     style.color.toLowerCase() === c
@@ -146,7 +147,7 @@ export function StyleControls({ style, onChange }: Props) {
               <button
                 key={v}
                 type="button"
-                onClick={() => set("bgMode", v)}
+                onClick={() => { set("bgMode", v); track.changeStyle("bg_mode", v) }}
                 aria-label={t(`bg.${v}`)}
                 className={`relative flex h-8 items-center justify-center overflow-hidden rounded-md border text-xs font-semibold transition ${
                   style.bgMode === v
@@ -170,7 +171,7 @@ export function StyleControls({ style, onChange }: Props) {
         <SelectField
           label={t("panel.family")}
           value={style.family}
-          onChange={(v) => set("family", v)}
+          onChange={(v) => { set("family", v); track.changeFont(v) }}
           options={FONT_FAMILIES.map((f) => ({ value: f.id, label: f.id }))}
         />
         <div>
@@ -186,14 +187,14 @@ export function StyleControls({ style, onChange }: Props) {
             <StyleToggle
               active={style.bold}
               disabled={!canBold}
-              onClick={() => set("bold", !style.bold)}
+              onClick={() => { const next = !style.bold; set("bold", next); track.changeStyle("bold", next) }}
               aria={t("style.bold")}
               icon={<Bold className="h-3.5 w-3.5" />}
             />
             <StyleToggle
               active={style.italic}
               disabled={!canItalic}
-              onClick={() => set("italic", !style.italic)}
+              onClick={() => { const next = !style.italic; set("italic", next); track.changeStyle("italic", next) }}
               aria={t("style.italic")}
               icon={<Italic className="h-3.5 w-3.5" />}
             />
@@ -206,7 +207,7 @@ export function StyleControls({ style, onChange }: Props) {
         <Segmented
           label={t("panel.align")}
           value={style.align}
-          onChange={(v) => set("align", v as TextStyle["align"])}
+          onChange={(v) => { set("align", v as TextStyle["align"]); track.changeStyle("align", v) }}
           options={ALIGN_OPTS.map(({ v, Icon }) => ({
             value: v,
             node: <Icon className="h-4 w-4" />,
@@ -216,7 +217,7 @@ export function StyleControls({ style, onChange }: Props) {
         <Segmented
           label={t("panel.line")}
           value={style.linePreset}
-          onChange={(v) => set("linePreset", v as LinePreset)}
+          onChange={(v) => { set("linePreset", v as LinePreset); track.changeStyle("line_preset", v) }}
           options={(Object.keys(LINE_PRESETS) as LinePreset[]).map((k) => ({
             value: k,
             node: <LineIcon variant={k} />,

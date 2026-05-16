@@ -19,6 +19,7 @@ import {
   useThemeProvider,
   type Theme,
 } from "@/lib/theme"
+import { track } from "@/lib/analytics"
 
 type Mode = "pure" | "image"
 
@@ -56,6 +57,7 @@ function Shell() {
   const handleSelectImageMode = () => {
     if (IMAGE_MODE_ENABLED) {
       setMode("image")
+      track.switchMode("image")
     } else {
       flash(t("mode.image.wip"))
     }
@@ -64,7 +66,7 @@ function Shell() {
   if (!splashed) {
     return (
       <main className="h-[100dvh] bg-background text-foreground">
-        <Splash onDone={() => setSplashed(true)} />
+        <Splash onDone={() => { setSplashed(true); track.appOpen() }} />
       </main>
     )
   }
@@ -95,7 +97,7 @@ function Shell() {
           <div className="inline-flex rounded-full border bg-muted/40 p-0.5 text-xs">
             <button
               type="button"
-              onClick={() => setMode("pure")}
+              onClick={() => { setMode("pure"); track.switchMode("pure") }}
               aria-label={t("mode.pure")}
               title={t("mode.pure")}
               className={`inline-flex h-6 w-7 items-center justify-center rounded-full transition ${
@@ -125,7 +127,7 @@ function Shell() {
           </div>
           <button
             type="button"
-            onClick={() => setLocale(NEXT_LOCALE[locale])}
+            onClick={() => { const next = NEXT_LOCALE[locale]; setLocale(next); track.changeLocale(next) }}
             aria-label={t("locale.switch")}
             title={t("locale.switch")}
             className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border bg-background px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
@@ -134,7 +136,7 @@ function Shell() {
           </button>
           <button
             type="button"
-            onClick={() => setTheme(NEXT_THEME[theme])}
+            onClick={() => { const next = NEXT_THEME[theme]; setTheme(next); track.changeTheme(next) }}
             aria-label={t(`theme.${theme}`)}
             title={t(`theme.${theme}`)}
             className="inline-flex h-7 w-7 items-center justify-center rounded-full border bg-background text-muted-foreground"
@@ -143,7 +145,7 @@ function Shell() {
           </button>
           <button
             type="button"
-            onClick={() => setHelpOpen(true)}
+            onClick={() => { setHelpOpen(true); track.openHelp() }}
             aria-label={t("help.button")}
             title={t("help.button")}
             className="inline-flex h-7 w-7 items-center justify-center rounded-full border bg-background text-muted-foreground"
