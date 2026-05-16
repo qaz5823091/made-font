@@ -442,9 +442,10 @@ export function MobileEditor({
 
       {/* Bottom toolbar: color, family, bold, italic, copy/download */}
       <div
-        className="pointer-events-none absolute left-0 right-0 z-20 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2"
+        className="pointer-events-none absolute left-0 right-0 z-20 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2"
         style={{ bottom: keyboardOffset }}
       >
+        <div className="relative flex items-center">
         <div className="pointer-events-auto mx-auto flex w-fit items-center gap-1 rounded-full bg-background/85 px-2 py-1.5 shadow-md ring-1 ring-black/5 backdrop-blur">
           <button
             ref={colorBtnRef}
@@ -526,6 +527,10 @@ export function MobileEditor({
             </>
           )}
         </div>
+          <span className="pointer-events-none absolute right-0 select-none text-[11px] font-medium text-muted-foreground/70">
+            @cppdesigns
+          </span>
+        </div>
       </div>
 
       {/* Color popover — anchored above the color button */}
@@ -560,15 +565,6 @@ export function MobileEditor({
           </div>
         </div>
       )}
-
-      {/* @cppdesigns watermark — pinned just above the bottom toolbar so it
-          stays clear of both the stage and the controls. Never exported. */}
-      <div
-        className="pointer-events-none absolute right-3 z-10 select-none text-[11px] font-medium text-muted-foreground/70"
-        style={{ bottom: keyboardOffset + 64 }}
-      >
-        @cppdesigns
-      </div>
 
       {/* Toast — positioned inside MobileEditor, just below the floating top
           toolbar so it never overlaps it (and the keyboard can't cover it). */}
