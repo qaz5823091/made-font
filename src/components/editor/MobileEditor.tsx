@@ -591,12 +591,17 @@ export function MobileEditor({
         </div>
       </div>
 
-      {/* Color popover — anchored above the color button */}
+      {/* Color popover — anchored above the bottom toolbar. Uses keyboardOffset
+          so the popover stays above the on-screen keyboard on real devices;
+          otherwise `bottom-20` lands behind the keyboard and the popover is
+          invisible (matches the "web mobile view works, real phone doesn't"
+          report). */}
       {openPanel === "color" && (
         <div
           ref={popoverRef}
           onMouseDown={preserveFocusIfEditing}
-          className="absolute bottom-20 left-3 z-30 rounded-2xl bg-background/95 p-3 shadow-xl ring-1 ring-black/10 backdrop-blur"
+          style={{ bottom: keyboardOffset + 80 }}
+          className="absolute left-3 z-30 rounded-2xl bg-background/95 p-3 shadow-xl ring-1 ring-black/10 backdrop-blur"
         >
           <HueWheel
             value={style.color}
