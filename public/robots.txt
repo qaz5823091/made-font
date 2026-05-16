@@ -1,3 +1,21 @@
+# Open graph crawlers — explicitly allowed even if the catch-all changes later.
+# (Real-world 403s on Meta's Sharing Debugger are usually Cloudflare bot rules,
+# not robots.txt — but this keeps Meta happy about the "robots.txt block" hint.)
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
 User-agent: *
 Allow: /
 
