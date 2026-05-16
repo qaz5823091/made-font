@@ -16,9 +16,18 @@
     <title>MadeFont · 造字趣</title>
     <meta
       name="description"
-      content="A website to make your custom font. MadeFont!"
+      content="MadeFont 造字趣 是免費線上工具：輸入文字、即時切換中文／日文／英文字型，調整顏色、底色、行距、對齊，一鍵匯出 PNG 圖片。內建源樣明朝、辰宇落雁體、IBM Plex Sans、Dela Gothic One 等開源字型，無需安裝、桌機手機都能用。"
     />
+    <meta
+      name="keywords"
+      content="字型,字體,中文字型,造字,造字趣,線上字型,字型圖片,字型轉圖片,字型工具,文字圖片,免費字型,開源字型,MadeFont,源樣明朝,辰宇落雁體,IBM Plex Sans,Dela Gothic One,thumbnail,IG限動,Threads,文案圖"
+    />
+    <meta name="author" content="cppdesigns" />
+    <meta name="robots" content="index,follow" />
     <link rel="canonical" href="%SITE_URL%/" />
+    <link rel="alternate" hreflang="zh-Hant" href="%SITE_URL%/" />
+    <link rel="alternate" hreflang="en" href="%SITE_URL%/" />
+    <link rel="alternate" hreflang="x-default" href="%SITE_URL%/" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="MadeFont" />
@@ -44,6 +53,33 @@
     />
     <meta name="twitter:image" content="%SITE_URL%/og-image.png" />
     <meta name="twitter:image:alt" content="MadeFont — MF banner" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "MadeFont",
+        "alternateName": "造字趣",
+        "url": "%SITE_URL%/",
+        "description": "免費線上中文字型轉圖片工具，內建多款開源中文／英文字型，輸入文字即可匯出 PNG。",
+        "applicationCategory": "DesignApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript",
+        "inLanguage": ["zh-Hant", "en"],
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "TWD"
+        },
+        "image": "%SITE_URL%/og-image.png",
+        "creator": {
+          "@type": "Organization",
+          "name": "cppdesigns",
+          "url": "%SITE_URL%/"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
