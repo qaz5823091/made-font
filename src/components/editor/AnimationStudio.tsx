@@ -168,9 +168,10 @@ export function AnimationStudio({ text, style, onClose }: Props) {
     }
   }, [buildGif, exporting, kind, speed, style, t])
 
-  // Feature-detect once: Chromium 121+ exposes ClipboardItem.supports, others
-  // either silently succeed (some) or reject at write time (most). When we can
-  // tell up front, we disable the button so users don't waste an encode cycle.
+  // Feature-detect clipboard image/gif support once. Chromium 121+ exposes
+  // ClipboardItem.supports; older browsers either silently succeed or reject
+  // at write time (Safari, mostly). When the API tells us up front we can
+  // skip straight to the share fallback below.
   const canCopyGif = useMemo(() => {
     if (typeof ClipboardItem === "undefined") return false
     const supports = (ClipboardItem as unknown as {
@@ -183,28 +184,79 @@ export function AnimationStudio({ text, style, onClose }: Props) {
         return false
       }
     }
-    // Unknown — let the user try; we'll surface a clear toast if it rejects.
+    // Unknown — let the user try; we'll catch the rejection at write time.
     return true
+  }, [])
+
+  // Web Share API — iOS Safari + modern Android Chrome ship this even when
+  // they refuse clipboard image/gif. Probing with a real image/gif file
+  // ensures we only claim support when the OS actually accepts the MIME.
+  const canShareGif = useMemo(() => {
+    if (typeof navigator === "undefined") return false
+    if (typeof navigator.canShare !== "function") return false
+    try {
+      const probe = new File([new Blob([], { type: "image/gif" })], "probe.gif", {
+        type: "image/gif",
+      })
+      return navigator.canShare({ files: [probe] })
+    } catch {
+      return false
+    }
   }, [])
 
   const handleCopy = useCallback(async () => {
     if (exporting) return
-    if (!canCopyGif) {
-      flash(t("toast.copyGifUnsupported"))
+
+    let blob: Blob
+    try {
+      blob = await buildGif("copy")
+    } catch (err) {
+      flash(err instanceof Error ? err.message : t("toast.copyFailed"))
       return
     }
-    try {
-      const blob = await buildGif("copy")
-      await copyBlobToClipboard(blob, "image/gif")
-      flash(t("toast.copied"))
-      track.copyGif(buildGifExportConfig("mobile", style, kind, speed))
-    } catch {
-      // Most failures here are the browser refusing image/gif on the
-      // clipboard. Treat them all as "use download instead" — the generic
-      // "copy failed" message wasn't actionable enough.
-      flash(t("toast.copyGifUnsupported"))
+
+    // Path 1 — Web Clipboard with image/gif. Best UX (single tap, animation
+    // preserved) but limited browser support.
+    if (canCopyGif) {
+      try {
+        await copyBlobToClipboard(blob, "image/gif")
+        flash(t("toast.copied"))
+        track.copyGif(buildGifExportConfig("mobile", style, kind, speed))
+        return
+      } catch {
+        // Detect lied (Chrome on some platforms) — fall through.
+      }
     }
-  }, [buildGif, canCopyGif, exporting, kind, speed, style, t])
+
+    // Path 2 — Web Share Sheet. Two taps (the OS sheet has its own "Copy"
+    // tile, plus other targets like Save / Send). Animation usually survives.
+    if (canShareGif) {
+      const file = new File([blob], timestampedName("made-font-anim", "gif"), {
+        type: "image/gif",
+      })
+      try {
+        await navigator.share({ files: [file] })
+        track.shareGif(buildGifExportConfig("mobile", style, kind, speed))
+        return
+      } catch (err) {
+        // User dismissed the sheet — that's not a failure, just no-op.
+        if (err instanceof DOMException && err.name === "AbortError") return
+        // Any other error → drop to the unsupported toast below.
+      }
+    }
+
+    // Neither path is available — point the user at Download.
+    flash(t("toast.copyGifUnsupported"))
+  }, [
+    buildGif,
+    canCopyGif,
+    canShareGif,
+    exporting,
+    kind,
+    speed,
+    style,
+    t,
+  ])
 
   // Centralized "user picked an effect" path. Click + swipe both funnel here
   // so they share: state update, animation reset (so the new effect starts

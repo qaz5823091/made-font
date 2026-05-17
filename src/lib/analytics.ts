@@ -170,4 +170,11 @@ export const track = {
 
   downloadGif: (config: GifExportConfig) =>
     log("download_gif", flattenGifExportConfig(config)),
+
+  // Fired when the Copy button falls back to navigator.share because the
+  // browser doesn't accept image/gif on the clipboard (mainly iOS Safari).
+  // We can't tell which target the user picked inside the share sheet — that
+  // happens out-of-process — so this just records that the fallback fired.
+  shareGif: (config: GifExportConfig) =>
+    log("share_gif", flattenGifExportConfig(config)),
 }
