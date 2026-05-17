@@ -5,8 +5,10 @@ import {
   AlignRight,
   Bold,
   Check,
+  Circle,
   Copy,
   Download,
+  Film,
   Italic,
   Loader2,
   Palette,
@@ -21,7 +23,9 @@ import {
   resolveVariant,
 } from "@/lib/fonts"
 import {
+  canvasPadding,
   cssFontShorthand,
+  layoutCurvedText,
   measureText,
   resolveColors,
 } from "@/lib/canvas"
@@ -47,7 +51,7 @@ import {
 import { useI18n } from "@/lib/i18n"
 import { buildExportConfig, track } from "@/lib/analytics"
 
-const PADDING = 24
+const BASE_PADDING = 24
 const SWATCHES = [
   "#111827",
   "#ffffff",
@@ -67,7 +71,7 @@ const FAMILY_LABELS: Record<string, string> = {
   ChenYuluoyanThin: "辰宇落雁體",
 }
 
-type Panel = "color" | null
+type Panel = "color" | "curve" | null
 
 type Props = {
   text: string
@@ -76,6 +80,7 @@ type Props = {
   setStyle: (v: TextStyle | ((s: TextStyle) => TextStyle)) => void
   editing: boolean
   setEditing: (v: boolean) => void
+  onOpenAnimation?: () => void
 }
 
 export function MobileEditor({
@@ -85,6 +90,7 @@ export function MobileEditor({
   setStyle,
   editing,
   setEditing,
+  onOpenAnimation,
 }: Props) {
   const { t } = useI18n()
   const [fontReady, setFontReady] = useState(false)
@@ -101,6 +107,8 @@ export function MobileEditor({
   const stageRef = useRef<HTMLDivElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
   const colorBtnRef = useRef<HTMLButtonElement>(null)
+  const curvePopoverRef = useRef<HTMLDivElement>(null)
+  const curveBtnRef = useRef<HTMLButtonElement>(null)
 
   // Track stage width — feeds both the auto-fit loop and the canvas wrap width.
   useLayoutEffect(() => {
@@ -151,9 +159,46 @@ export function MobileEditor({
     const placeholder = t("panel.text.placeholder")
     const drawText = isEmpty ? placeholder : text
     mctx.font = cssFontShorthand(effective)
-    const metrics = measureText(mctx, drawText, effective)
+    const pad = canvasPadding(effective, BASE_PADDING)
     const cssWidth = stageW
-    const cssHeight = Math.max(Math.ceil(metrics.height + PADDING * 2), 64)
+    const { fg, bg } = resolveColors(effective)
+
+    if (effective.curve !== 0) {
+      // Curve mode on mobile: lock width to stage, scale the natural curve
+      // layout so it fits within (stageW - 2*pad) along its dominant axis,
+      // then center it. Keeps the slider live-preview honest at any radius.
+      const layout = layoutCurvedText(mctx, drawText, effective, effective.curve)
+      const target = Math.max(1, cssWidth - pad * 2)
+      const naturalMax = Math.max(layout.width, layout.height, 1)
+      const scale = Math.min(1, target / naturalMax)
+      const cssHeight = Math.max(Math.ceil(layout.height * scale + pad * 2), 64)
+      canvas.width = cssWidth * dpr
+      canvas.height = cssHeight * dpr
+      canvas.style.width = `${cssWidth}px`
+
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.scale(dpr, dpr)
+      if (bg) {
+        ctx.fillStyle = bg
+        ctx.fillRect(0, 0, cssWidth, cssHeight)
+      }
+      ctx.fillStyle = fg
+      ctx.globalAlpha = isEmpty ? 0.35 : 1
+      // Center the (scaled) layout inside the canvas.
+      ctx.save()
+      ctx.translate(cssWidth / 2, cssHeight / 2)
+      ctx.scale(scale, scale)
+      ctx.translate(-layout.width / 2, -layout.height / 2)
+      layout.draw(ctx, 0, 0)
+      ctx.restore()
+      ctx.globalAlpha = 1
+      return
+    }
+
+    const metrics = measureText(mctx, drawText, effective)
+    const cssHeight = Math.max(Math.ceil(metrics.height + pad * 2), 64)
     canvas.width = cssWidth * dpr
     canvas.height = cssHeight * dpr
     canvas.style.width = `${cssWidth}px`
@@ -162,7 +207,6 @@ export function MobileEditor({
     if (!ctx) return
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.scale(dpr, dpr)
-    const { fg, bg } = resolveColors(effective)
     if (bg) {
       ctx.fillStyle = bg
       ctx.fillRect(0, 0, cssWidth, cssHeight)
@@ -174,11 +218,11 @@ export function MobileEditor({
     ctx.textAlign = effective.align
     const anchorX =
       effective.align === "left"
-        ? PADDING
+        ? pad
         : effective.align === "right"
-          ? cssWidth - PADDING
+          ? cssWidth - pad
           : cssWidth / 2
-    let cursorY = PADDING + metrics.lineHeightPx / 2
+    let cursorY = pad + metrics.lineHeightPx / 2
     for (const line of metrics.lines) {
       ctx.fillText(line, anchorX, cursorY)
       cursorY += metrics.lineHeightPx
@@ -186,20 +230,30 @@ export function MobileEditor({
     ctx.globalAlpha = 1
   }, [effective, text, stageW, t])
 
-  // Close the color popover when the user taps anywhere outside it or the
-  // color toggle button.
+  // Close whichever popover is open when the user taps outside it. Each panel
+  // anchors to its own toggle button so we whitelist both.
   useEffect(() => {
-    if (openPanel !== "color") return
+    if (openPanel === null) return
     const handler = (e: PointerEvent) => {
       const target = e.target as Node | null
       if (!target) return
       if (popoverRef.current?.contains(target)) return
       if (colorBtnRef.current?.contains(target)) return
+      if (curvePopoverRef.current?.contains(target)) return
+      if (curveBtnRef.current?.contains(target)) return
       setOpenPanel(null)
     }
     document.addEventListener("pointerdown", handler)
     return () => document.removeEventListener("pointerdown", handler)
   }, [openPanel])
+
+  // The curve effect only renders to the canvas (the textarea can't show
+  // curved text), so adjusting it during editing has no visible feedback.
+  // Force-close the popover when editing starts; the trigger button is also
+  // disabled below so the user can't re-open it.
+  useEffect(() => {
+    if (editing && openPanel === "curve") setOpenPanel(null)
+  }, [editing, openPanel])
 
   // Redraw whenever we land back in preview mode or shared inputs change.
   useEffect(() => {
@@ -210,7 +264,7 @@ export function MobileEditor({
 
   // Auto-fit: shrink displaySize until textarea fits inside its own inner box.
   // Using ta.client* (rather than stage.client*) keeps autofit correct after
-  // the bg/padding wrapper, which trims the textarea by 2 * PADDING per axis.
+  // the bg/padding wrapper, which trims the textarea by 2 * BASE_PADDING per axis.
   useLayoutEffect(() => {
     if (!editing) return
     const ta = textareaRef.current
@@ -244,6 +298,43 @@ export function MobileEditor({
     style.linePreset,
     style.align,
     displaySize,
+  ])
+
+  // Mirror auto-fit for preview mode (not editing). Without this the initial
+  // splash text and any text typed at full SIZE_DEFAULT overflows the locked
+  // stageW on narrow phones. We skip curve mode because layoutCurvedText
+  // already scales the layout to fit the canvas.
+  useLayoutEffect(() => {
+    if (editing) return
+    if (stageW <= 0) return
+    if (style.curve !== 0) {
+      if (displaySize !== style.size) setDisplaySize(style.size)
+      return
+    }
+    const probe = document.createElement("canvas").getContext("2d")
+    if (!probe) return
+    const pad = canvasPadding(style, BASE_PADDING)
+    const target = Math.max(1, stageW - pad * 2)
+    let size = style.size
+    const placeholder = t("panel.text.placeholder")
+    const drawText = text.length === 0 ? placeholder : text
+    for (let i = 0; i < 24; i++) {
+      probe.font = cssFontShorthand({ ...style, size })
+      const metrics = measureText(probe, drawText, { ...style, size })
+      if (metrics.inkWidth <= target) break
+      const ratio = target / metrics.inkWidth
+      const next = Math.max(10, Math.floor(size * ratio * 0.97))
+      if (next === size) break
+      size = next
+    }
+    if (size !== displaySize) setDisplaySize(size)
+  }, [
+    editing,
+    stageW,
+    text,
+    style,
+    displaySize,
+    t,
   ])
 
   const flash = (msg: string) => {
@@ -392,7 +483,7 @@ export function MobileEditor({
             style={{
               backgroundColor: bg ?? "transparent",
               borderRadius: bg ? 12 : 0,
-              padding: `${PADDING}px`,
+              padding: `${BASE_PADDING}px`,
               boxSizing: "border-box",
             }}
           >
@@ -492,8 +583,71 @@ export function MobileEditor({
               complement={complementColor(style.color)}
             />
           </PillBtn>
+          {/* Curve only renders into the preview canvas, not the textarea,
+              so we hide its toggle entirely while editing — keeping a disabled
+              button around just looked like a bug. The button reappears the
+              moment editing ends. */}
+          {!editing && (
+            <>
+              <Divider />
+              <button
+                ref={curveBtnRef}
+                type="button"
+                onClick={() =>
+                  setOpenPanel(openPanel === "curve" ? null : "curve")
+                }
+                aria-pressed={openPanel === "curve"}
+                aria-label={t("panel.curve")}
+                title={t("panel.curve")}
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-full transition ${
+                  style.curve !== 0
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground"
+                }`}
+              >
+                <Circle className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Curve popover — opens below the top floating bar where the curve
+          toggle lives, so the spatial relationship to the trigger reads
+          immediately. */}
+      {openPanel === "curve" && (
+        <div
+          ref={curvePopoverRef}
+          onMouseDown={preserveFocusIfEditing}
+          className="absolute left-1/2 top-12 z-30 w-[min(20rem,calc(100vw-1.5rem))] -translate-x-1/2 rounded-2xl bg-background/95 p-3 shadow-xl ring-1 ring-black/10 backdrop-blur"
+        >
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              {t("panel.curve")}
+            </span>
+            <span className="text-[10px] tabular-nums text-muted-foreground">
+              {Math.round(style.curve * 100)}
+            </span>
+          </div>
+          <input
+            type="range"
+            min={-100}
+            max={100}
+            step={1}
+            value={Math.round(style.curve * 100)}
+            onChange={(e) => {
+              // Magnetic snap around 0 — mirrors StyleControls so the slider
+              // pulls back to "straight" without needing pixel precision.
+              const raw = Number(e.target.value)
+              const snapped = Math.abs(raw) < 5 ? 0 : raw
+              set("curve", snapped / 100)
+            }}
+            // Fire GA on release only — same pattern as StyleControls.
+            onPointerUp={() => track.changeCurve(style.curve)}
+            className="h-7 w-full accent-primary"
+          />
+        </div>
+      )}
 
       {/* Bottom toolbar: color, family, bold, italic, copy/download */}
       <div
@@ -566,6 +720,17 @@ export function MobileEditor({
           {!editing && (
             <>
               <span className="mx-0.5 h-5 w-px bg-border" />
+              {onOpenAnimation && (
+                <button
+                  type="button"
+                  onClick={onOpenAnimation}
+                  aria-label={t("action.animate")}
+                  title={t("action.animate")}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-background"
+                >
+                  <Film className="h-4 w-4" />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleCopy}

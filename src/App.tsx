@@ -3,6 +3,7 @@ import { HelpCircle, ImageIcon, Monitor, Moon, Sun, Type } from "lucide-react"
 import { PureEditor } from "@/components/editor/PureEditor"
 import { MobileEditor } from "@/components/editor/MobileEditor"
 import { ImageEditor } from "@/components/editor/ImageEditor"
+import { AnimationStudio } from "@/components/editor/AnimationStudio"
 import { useMediaQuery } from "@/lib/useMediaQuery"
 import { Splash } from "@/components/Splash"
 import { HelpModal } from "@/components/HelpModal"
@@ -48,6 +49,7 @@ function Shell() {
   const [pureText, setPureText] = useState(() => t("pure.placeholderText"))
   const [pureStyle, setPureStyle] = useState<TextStyle>(DEFAULT_STYLE)
   const [mobileEditing, setMobileEditing] = useState(false)
+  const [animationOpen, setAnimationOpen] = useState(false)
 
   const flash = (msg: string) => {
     setToast(msg)
@@ -69,6 +71,23 @@ function Shell() {
         <Splash onDone={() => { setSplashed(true); track.appOpen() }} />
       </main>
     )
+  }
+
+  if (animationOpen) {
+    return (
+      <main className="h-[100dvh] bg-background text-foreground">
+        <AnimationStudio
+          text={pureText}
+          style={pureStyle}
+          onClose={() => setAnimationOpen(false)}
+        />
+      </main>
+    )
+  }
+
+  const openAnimation = () => {
+    setAnimationOpen(true)
+    track.openAnimation()
   }
 
   const ThemeIcon = theme === "light" ? Sun : theme === "dark" ? Moon : Monitor
@@ -164,6 +183,7 @@ function Shell() {
               setText={setPureText}
               style={pureStyle}
               setStyle={setPureStyle}
+              onOpenAnimation={openAnimation}
             />
           ) : (
             <MobileEditor
@@ -173,6 +193,7 @@ function Shell() {
               setStyle={setPureStyle}
               editing={mobileEditing}
               setEditing={setMobileEditing}
+              onOpenAnimation={openAnimation}
             />
           )
         ) : (

@@ -8,12 +8,19 @@ import pkg from "./package.json" with { type: "json" }
 // drift between `og:url`, `og:image`, `twitter:image`, etc.
 const SITE_URL = "https://madefont.cppdesigns.cc"
 
+// Facebook App ID — silences Meta sharing debugger 206 "missing fb:app_id".
+// Set VITE_FB_APP_ID in .env.local to your real app ID once registered at
+// https://developers.facebook.com. Falls back to a numeric placeholder so the
+// property is always present (an empty string still triggers the 206 warning).
+const FB_APP_ID = process.env.VITE_FB_APP_ID || "0"
+
 export default defineConfig({
   plugins: [
     react(),
     {
       name: "inject-site-url",
-      transformIndexHtml: (html) => html.replaceAll("%SITE_URL%", SITE_URL),
+      transformIndexHtml: (html) =>
+        html.replaceAll("%SITE_URL%", SITE_URL).replaceAll("%FB_APP_ID%", FB_APP_ID),
     },
   ],
   // 無論什麼情況都使用根目錄，適合已綁定獨立子網域的專案

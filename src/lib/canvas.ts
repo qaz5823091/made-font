@@ -5,7 +5,10 @@ import { complementColor } from "./color"
 
 export type LineMetrics = {
   lines: string[]
+  /** Max advance width across lines (for cursor positioning). */
   width: number
+  /** Max ink width across lines (advance + glyph overhang). Used for canvas sizing. */
+  inkWidth: number
   height: number
   lineHeightPx: number
 }
@@ -16,15 +19,43 @@ export function measureText(
   style: TextStyle,
 ): LineMetrics {
   ctx.font = cssFontShorthand(style)
+  const prevAlign = ctx.textAlign
+  ctx.textAlign = "start"
   const lines = text.length === 0 ? [""] : text.split("\n")
   let maxWidth = 0
+  let maxInk = 0
   for (const line of lines) {
-    const w = ctx.measureText(line).width
-    if (w > maxWidth) maxWidth = w
+    const m = ctx.measureText(line)
+    if (m.width > maxWidth) maxWidth = m.width
+    // Italics, wide left-bearings (e.g. Dela Gothic) and decorative fonts can
+    // paint glyphs outside the advance box. actualBoundingBox{Left,Right} are
+    // measured from the alignment point (start = origin), so their sum is the
+    // total ink extent regardless of advance.
+    const ink =
+      (m.actualBoundingBoxLeft ?? 0) + (m.actualBoundingBoxRight ?? m.width)
+    if (ink > maxInk) maxInk = ink
   }
+  ctx.textAlign = prevAlign
   const lineHeightPx = stylePx(style) * styleLineHeight(style)
   const height = lines.length * lineHeightPx
-  return { lines, width: maxWidth, height, lineHeightPx }
+  return {
+    lines,
+    width: maxWidth,
+    inkWidth: Math.max(maxWidth, maxInk),
+    height,
+    lineHeightPx,
+  }
+}
+
+/**
+ * Canvas-edge padding around the text. When a background color is on, we add
+ * breathing room proportional to font size so wide-bearing fonts don't sit
+ * flush against the bg edges in the exported image.
+ */
+export function canvasPadding(style: TextStyle, basePadding: number): number {
+  if (style.bgMode === "transparent") return basePadding
+  const sized = Math.round(stylePx(style) * 0.55)
+  return Math.max(basePadding, sized)
 }
 
 /**
@@ -59,13 +90,154 @@ export function measureTextWrapped(
     if (current !== "") lines.push(current)
   }
   let widest = 0
+  let widestInk = 0
   for (const line of lines) {
-    const w = ctx.measureText(line).width
-    if (w > widest) widest = w
+    const m = ctx.measureText(line)
+    if (m.width > widest) widest = m.width
+    const ink =
+      (m.actualBoundingBoxLeft ?? 0) + (m.actualBoundingBoxRight ?? m.width)
+    if (ink > widestInk) widestInk = ink
   }
   const lineHeightPx = stylePx(style) * styleLineHeight(style)
   const height = lines.length * lineHeightPx
-  return { lines, width: widest, height, lineHeightPx }
+  return {
+    lines,
+    width: widest,
+    inkWidth: Math.max(widest, widestInk),
+    height,
+    lineHeightPx,
+  }
+}
+
+/**
+ * Lays out characters along a circular arc. `curveT` is in [-1, 1]:
+ *   curveT > 0 → smile arc (circle center below the text — text curves down)
+ *   curveT = 0 → straight (caller should skip the curve path entirely)
+ *   curveT < 0 → frown arc (circle center above the text — text curves up)
+ * |curveT| controls how much of the full circle the text wraps (1 = full).
+ *
+ * Returns the bbox of the laid-out text plus a `draw` closure that paints
+ * each glyph onto the caller's ctx, translated into the supplied canvas frame.
+ *
+ * Short-text edge case: when the user has only typed a few characters and
+ * |curveT| is high, the natural radius `totalAdvance / arcAngle` collapses to
+ * a tiny circle. We floor the radius at ~1.2 × font size so the circle stays
+ * readable, and let the text occupy only the portion of the arc it earns
+ * (the remainder shows as a gap) instead of forcibly repeating the string.
+ */
+export type CurvedLayout = {
+  width: number
+  height: number
+  draw: (
+    ctx: CanvasRenderingContext2D,
+    originX: number,
+    originY: number,
+  ) => void
+}
+
+export function layoutCurvedText(
+  measureCtx: CanvasRenderingContext2D,
+  text: string,
+  style: TextStyle,
+  curveT: number,
+): CurvedLayout {
+  measureCtx.font = cssFontShorthand(style)
+  const prevAlign = measureCtx.textAlign
+  const prevBaseline = measureCtx.textBaseline
+  measureCtx.textAlign = "center"
+  measureCtx.textBaseline = "middle"
+
+  // Treat the whole string as one ring; newlines become spaces.
+  const flat = text.replace(/\n+/g, " ")
+  const chars = [...flat]
+  const safeChars = chars.length > 0 ? chars : [" "]
+  const widths = safeChars.map((c) => Math.max(measureCtx.measureText(c).width, 1))
+  const totalAdvance = widths.reduce((a, b) => a + b, 0)
+
+  // Split sign + magnitude so the geometry stays one branch and we flip at
+  // draw time. sign=+1 → smile (center below), sign=-1 → frown (center above).
+  const sign: 1 | -1 = curveT >= 0 ? 1 : -1
+  const t = Math.max(0.0001, Math.min(1, Math.abs(curveT)))
+  const fontPx = stylePx(style)
+  const charH = fontPx * styleLineHeight(style)
+
+  // Map the slider to arc-length on a minimum-sized circle. This is the edge
+  // case: if `totalAdvance / arcAngle` would shrink the circle below readable
+  // size, freeze the radius and just use less of the arc.
+  const minRadius = Math.max(fontPx * 1.2, charH * 0.9)
+  const rawAngle = 2 * Math.PI * t
+  let radius = totalAdvance / rawAngle
+  let arcAngle = rawAngle
+  if (radius < minRadius) {
+    radius = minRadius
+    arcAngle = totalAdvance / radius
+  }
+
+  // Per-char angular positions, centered so the arc midpoint sits at the
+  // smile/frown apex.
+  const positions: { ch: string; angle: number; width: number }[] = []
+  let cursor = 0
+  for (let i = 0; i < safeChars.length; i++) {
+    const center = cursor + widths[i] / 2
+    const angle = center / radius - arcAngle / 2
+    positions.push({ ch: safeChars[i], angle, width: widths[i] })
+    cursor += widths[i]
+  }
+
+  // Bbox of the arc: sample endpoints + apex, expand for char body. For frown
+  // we mirror y so the apex is at the bottom of the bbox instead of the top.
+  const half = arcAngle / 2
+  const inkPoints: { x: number; y: number }[] = []
+  for (const a of [-half, 0, half]) {
+    inkPoints.push({ x: radius * Math.sin(a), y: -sign * radius * Math.cos(a) })
+  }
+  for (const a of [-Math.PI, -Math.PI / 2, Math.PI / 2, Math.PI]) {
+    if (a >= -half && a <= half) {
+      inkPoints.push({ x: radius * Math.sin(a), y: -sign * radius * Math.cos(a) })
+    }
+  }
+  let xMin = Infinity
+  let xMax = -Infinity
+  let yMin = Infinity
+  let yMax = -Infinity
+  const halfBody = Math.max(charH, ...widths) / 2
+  for (const p of inkPoints) {
+    if (p.x - halfBody < xMin) xMin = p.x - halfBody
+    if (p.x + halfBody > xMax) xMax = p.x + halfBody
+    if (p.y - halfBody < yMin) yMin = p.y - halfBody
+    if (p.y + halfBody > yMax) yMax = p.y + halfBody
+  }
+
+  const width = Math.ceil(xMax - xMin)
+  const height = Math.ceil(yMax - yMin)
+  const centerX = -xMin
+  const centerY = -yMin
+
+  measureCtx.textAlign = prevAlign
+  measureCtx.textBaseline = prevBaseline
+
+  const draw = (
+    ctx: CanvasRenderingContext2D,
+    originX: number,
+    originY: number,
+  ) => {
+    ctx.font = cssFontShorthand(style)
+    ctx.textBaseline = "middle"
+    ctx.textAlign = "center"
+    for (const { ch, angle } of positions) {
+      ctx.save()
+      ctx.translate(originX + centerX, originY + centerY)
+      // For frown we rotate the opposite way and walk *down* by the radius;
+      // this places chars on the bottom arc with their baselines tangent to
+      // the circle, while keeping the glyphs themselves right-side-up.
+      ctx.rotate(sign * angle)
+      ctx.translate(0, -sign * radius)
+      ctx.fillText(ch, 0, 0)
+      ctx.restore()
+    }
+  }
+
+  return { width, height, draw }
 }
 
 export function cssFontShorthand(style: TextStyle): string {

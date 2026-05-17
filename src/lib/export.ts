@@ -8,18 +8,23 @@ export async function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> 
 }
 
 /**
- * Copy a PNG blob to the clipboard. Accepts a Promise<Blob> so that the caller
+ * Copy a blob to the clipboard. Accepts a Promise<Blob> so that the caller
  * can invoke this synchronously inside the user-gesture handler (required by
  * Safari, which rejects clipboard writes when a user-gesture context has been
  * lost across awaits). The ClipboardItem itself can hold a pending promise.
+ *
+ * `mimeType` defaults to image/png. Use "image/gif" for animated exports —
+ * browser support varies (Chromium ≥ 121 has it, Firefox and Safari may
+ * reject); callers should surface the error to the user when that happens.
  */
 export async function copyBlobToClipboard(
   blob: Blob | Promise<Blob>,
+  mimeType: string = "image/png",
 ): Promise<void> {
   if (!("clipboard" in navigator) || typeof ClipboardItem === "undefined") {
     throw new Error("此瀏覽器不支援直接複製圖片到剪貼簿")
   }
-  const item = new ClipboardItem({ "image/png": Promise.resolve(blob) })
+  const item = new ClipboardItem({ [mimeType]: Promise.resolve(blob) })
   await navigator.clipboard.write([item])
 }
 

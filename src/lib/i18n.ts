@@ -29,6 +29,7 @@ const ZH: Messages = {
   "panel.align": "對齊",
   "panel.line": "行距",
   "panel.size": "字級",
+  "panel.curve": "圓弧",
   "panel.rotation": "旋轉",
   "gesture.pinch": "雙指縮放",
   "gesture.pinchRotate": "雙指縮放 / 旋轉",
@@ -55,9 +56,24 @@ const ZH: Messages = {
   "action.addText": "新增文字",
   "action.delete": "刪除",
   "action.done": "完成編輯",
+  "action.back": "返回",
+  "action.exportGif": "匯出 GIF",
+  "action.animate": "動畫模式",
+
+  "anim.title": "動畫工作室",
+  "anim.effect": "效果",
+  "anim.speed": "速度",
+  "anim.exporting": "編碼中… {done}/{total}",
+  "anim.kind.pulse": "脈動",
+  "anim.kind.bounce": "彈跳",
+  "anim.kind.rotate": "旋轉",
+  "anim.kind.fade": "淡入淡出",
+  "anim.kind.marquee": "跑馬燈",
+  "anim.kind.wave": "波浪",
 
   "toast.copied": "已複製到剪貼簿",
   "toast.copyFailed": "複製失敗",
+  "toast.copyGifUnsupported": "此裝置不支援複製 GIF，請改用「下載 GIF」",
   "toast.downloading": "已開始下載",
   "toast.downloadFailed": "下載失敗",
   "error.exportFailed": "匯出 PNG 失敗",
@@ -70,7 +86,7 @@ const ZH: Messages = {
 
   "font.loading": "載入字型中…",
   "font.newText": "新文字",
-  "pure.placeholderText": "輸入文字\n即時預覽",
+  "pure.placeholderText": "我愛 MadeFont",
 
   "help.button": "說明與條款",
   "help.close": "關閉",
@@ -84,9 +100,12 @@ const ZH: Messages = {
   "help.usage.image.title": "圖片合成模式",
   "help.usage.image.body":
     "之後會開放：放一張圖、把文字疊在上面，可以一直疊。複製跟下載的方式跟純文字模式一樣。",
+  "help.usage.animation.title": "動畫模式",
+  "help.usage.animation.body":
+    "在純文字模式下面點「動畫模式」（手機版是膠片圖示）進入動畫工作室。底部一排是 6 種效果：脈動、彈跳、旋轉、淡入淡出、跑馬燈、波浪——點圖示或左右滑都可以切換。烏龜跟兔子之間的滑桿調速度。沒選底色時匯出會是透明背景 GIF；有選底色就是不透明的。手機如果不支援複製 GIF，會跳提示請改用下載。",
   "help.usage.tips.title": "小撇步",
   "help.usage.tips.body":
-    "右上角可以切主題（跟隨系統／淺色／深色）跟語言，設定會留在這台裝置上。如果「複製圖片」用不了，改用「下載圖片」就好。",
+    "右上角可以切主題（跟隨系統／淺色／深色）跟語言，設定會留在這台裝置上。如果「複製圖片」用不了，改用「下載圖片」就好。圓弧的滑桿往中間 0 拖會自動 snap 回直線。",
 
   "help.terms.title": "字型來源與授權",
   "help.terms.intro":
@@ -138,6 +157,7 @@ const EN: Messages = {
   "panel.align": "Align",
   "panel.line": "Line",
   "panel.size": "Size",
+  "panel.curve": "Curve",
   "panel.rotation": "Rotation",
   "gesture.pinch": "pinch to resize",
   "gesture.pinchRotate": "pinch / rotate",
@@ -164,9 +184,25 @@ const EN: Messages = {
   "action.addText": "Add text",
   "action.delete": "Delete",
   "action.done": "Done editing",
+  "action.back": "Back",
+  "action.exportGif": "Export GIF",
+  "action.animate": "Animation mode",
+
+  "anim.title": "Animation Studio",
+  "anim.effect": "Effect",
+  "anim.speed": "Speed",
+  "anim.exporting": "Encoding… {done}/{total}",
+  "anim.kind.pulse": "Pulse",
+  "anim.kind.bounce": "Bounce",
+  "anim.kind.rotate": "Rotate",
+  "anim.kind.fade": "Fade",
+  "anim.kind.marquee": "Marquee",
+  "anim.kind.wave": "Wave",
 
   "toast.copied": "Copied to clipboard",
   "toast.copyFailed": "Copy failed",
+  "toast.copyGifUnsupported":
+    "This device can't copy GIFs to the clipboard — use Download instead",
   "toast.downloading": "Download started",
   "toast.downloadFailed": "Download failed",
   "error.exportFailed": "Failed to export PNG",
@@ -180,7 +216,7 @@ const EN: Messages = {
 
   "font.loading": "Loading font…",
   "font.newText": "New text",
-  "pure.placeholderText": "Type here\nlive preview",
+  "pure.placeholderText": "I love MadeFont",
 
   "help.button": "Help & Licenses",
   "help.close": "Close",
@@ -194,9 +230,12 @@ const EN: Messages = {
   "help.usage.image.title": "Image-overlay mode",
   "help.usage.image.body":
     "Coming soon — drop in an image and stack text on top. Copy and Download work the same as text-only mode.",
+  "help.usage.animation.title": "Animation mode",
+  "help.usage.animation.body":
+    "From text-only mode, tap “Animation mode” (the film icon on mobile) to enter the studio. The bottom row holds six effects — pulse, bounce, rotate, fade, marquee, wave — tap an icon or swipe sideways to switch. The slider between the turtle and rabbit controls speed. With no background color picked, the exported GIF has a transparent background; pick one and it becomes opaque. If your device can't copy GIFs to the clipboard, a toast will tell you to download instead.",
   "help.usage.tips.title": "Tips",
   "help.usage.tips.body":
-    "Top-right switches theme (follow system / light / dark) and language. Both stay on this device. If Copy doesn't work in your browser, Download still does.",
+    "Top-right switches theme (follow system / light / dark) and language. Both stay on this device. If Copy doesn't work in your browser, Download still does. The curve slider snaps back to 0 when dragged near the center.",
 
   "help.terms.title": "Font credits & licenses",
   "help.terms.intro":

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Copy, Download, Loader2 } from "lucide-react"
+import { Copy, Download, Film, Loader2 } from "lucide-react"
 import { ensureFontLoaded } from "@/lib/fonts"
 import {
+  canvasPadding,
   cssFontShorthand,
+  layoutCurvedText,
   measureText,
   resolveColors,
 } from "@/lib/canvas"
@@ -23,16 +25,17 @@ import { useI18n } from "@/lib/i18n"
 import { buildExportConfig, track } from "@/lib/analytics"
 import { StyleControls } from "./StyleControls"
 
-const PADDING = 48
+const BASE_PADDING = 48
 
 type Props = {
   text: string
   setText: (v: string) => void
   style: TextStyle
   setStyle: (v: TextStyle | ((s: TextStyle) => TextStyle)) => void
+  onOpenAnimation?: () => void
 }
 
-export function PureEditor({ text, setText, style, setStyle }: Props) {
+export function PureEditor({ text, setText, style, setStyle, onOpenAnimation }: Props) {
   const { t } = useI18n()
   const [fontReady, setFontReady] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -76,9 +79,39 @@ export function PureEditor({ text, setText, style, setStyle }: Props) {
     const mctx = measureCanvas.getContext("2d")
     if (!mctx) return
     mctx.font = cssFontShorthand(style)
+    const pad = canvasPadding(style, BASE_PADDING)
+    const { fg, bg } = resolveColors(style)
+
+    if (style.curve !== 0) {
+      // Curve mode: lay out characters around a circle. Ignore the multi-line
+      // straight layout entirely so the slider acts as a one-shot transform.
+      // Negative curve flips the arc to a frown (circle center above text).
+      const layout = layoutCurvedText(mctx, text || " ", style, style.curve)
+      const cssWidth = Math.max(layout.width + pad * 2, 64)
+      const cssHeight = Math.max(layout.height + pad * 2, 64)
+      canvas.width = cssWidth * dpr
+      canvas.height = cssHeight * dpr
+      canvas.style.width = `${cssWidth}px`
+      canvas.style.height = `${cssHeight}px`
+
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.scale(dpr, dpr)
+
+      if (bg) {
+        ctx.fillStyle = bg
+        ctx.fillRect(0, 0, cssWidth, cssHeight)
+      }
+
+      ctx.fillStyle = fg
+      layout.draw(ctx, pad, pad)
+      return
+    }
+
     const metrics = measureText(mctx, text, style)
-    const cssWidth = Math.max(Math.ceil(metrics.width + PADDING * 2), 64)
-    const cssHeight = Math.max(Math.ceil(metrics.height + PADDING * 2), 64)
+    const cssWidth = Math.max(Math.ceil(metrics.inkWidth + pad * 2), 64)
+    const cssHeight = Math.max(Math.ceil(metrics.height + pad * 2), 64)
     canvas.width = cssWidth * dpr
     canvas.height = cssHeight * dpr
     canvas.style.width = `${cssWidth}px`
@@ -88,8 +121,6 @@ export function PureEditor({ text, setText, style, setStyle }: Props) {
     if (!ctx) return
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.scale(dpr, dpr)
-
-    const { fg, bg } = resolveColors(style)
 
     if (bg) {
       ctx.fillStyle = bg
@@ -103,12 +134,12 @@ export function PureEditor({ text, setText, style, setStyle }: Props) {
 
     const anchorX =
       style.align === "left"
-        ? PADDING
+        ? pad
         : style.align === "right"
-          ? cssWidth - PADDING
+          ? cssWidth - pad
           : cssWidth / 2
 
-    let cursorY = PADDING + metrics.lineHeightPx / 2
+    let cursorY = pad + metrics.lineHeightPx / 2
     for (const line of metrics.lines) {
       ctx.fillText(line, anchorX, cursorY)
       cursorY += metrics.lineHeightPx
@@ -235,6 +266,16 @@ export function PureEditor({ text, setText, style, setStyle }: Props) {
               {t("action.download")}
             </button>
           </div>
+          {onOpenAnimation && (
+            <button
+              type="button"
+              onClick={onOpenAnimation}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-input bg-muted/40 px-3 py-2 text-sm font-medium text-foreground active:scale-[0.98]"
+            >
+              <Film className="h-4 w-4" />
+              {t("action.animate")}
+            </button>
+          )}
         </div>
         {toast && (
           <div className="pointer-events-none fixed bottom-24 left-1/2 -translate-x-1/2 rounded-full bg-black/80 px-4 py-2 text-xs text-white shadow-lg backdrop-blur">

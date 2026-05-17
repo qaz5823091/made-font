@@ -19,6 +19,14 @@ export type ExportConfig = {
   line_preset: string
   bg_mode: string
   color: string
+  /** -1..1 — bi-directional curve. 0 = straight. */
+  curve: number
+}
+
+/** Adds animation parameters to the base export config. */
+export type GifExportConfig = ExportConfig & {
+  animation_kind: string
+  animation_speed: number
 }
 
 export function buildExportConfig(
@@ -35,6 +43,20 @@ export function buildExportConfig(
     line_preset: style.linePreset,
     bg_mode: style.bgMode,
     color: style.color,
+    curve: style.curve,
+  }
+}
+
+export function buildGifExportConfig(
+  source: "desktop" | "mobile",
+  style: TextStyle,
+  animationKind: string,
+  animationSpeed: number,
+): GifExportConfig {
+  return {
+    ...buildExportConfig(source, style),
+    animation_kind: animationKind,
+    animation_speed: animationSpeed,
   }
 }
 
@@ -49,6 +71,17 @@ function flattenExportConfig(c: ExportConfig) {
     line_preset: c.line_preset,
     bg_mode: c.bg_mode,
     color: c.color,
+    // Round to 0.05 buckets so GA's dimension cardinality stays manageable.
+    curve: (Math.round(c.curve * 20) / 20).toFixed(2),
+  }
+}
+
+function flattenGifExportConfig(c: GifExportConfig) {
+  return {
+    ...flattenExportConfig(c),
+    animation_kind: c.animation_kind,
+    // One-decimal buckets for the same cardinality reason.
+    animation_speed: Math.round(c.animation_speed * 10) / 10,
   }
 }
 
@@ -113,4 +146,28 @@ export const track = {
 
   // Fired once per pinch gesture, not per frame.
   pinchResize: () => log("pinch_resize"),
+
+  // Curve direction "committed" — fired on pointer-up of the slider, so it
+  // captures intent without firing per drag frame. Bucketed to 0.05.
+  changeCurve: (value: number) =>
+    log("change_curve", {
+      value: (Math.round(value * 20) / 20).toFixed(2),
+      direction: value > 0 ? "smile" : value < 0 ? "frown" : "none",
+    }),
+
+  openAnimation: () => log("open_animation"),
+
+  // Distinguishes user-driven selection (tap an icon) from swipe-cycled
+  // selection so we can see which discovery affordance gets used.
+  changeAnimation: (kind: string, via: "tap" | "swipe") =>
+    log("change_animation", { kind, via }),
+
+  // Mirrors copyImage / downloadImage: separate events for each action,
+  // both carry the full style snapshot + animation kind + speed so reports
+  // can break exports down by which effect users actually kept.
+  copyGif: (config: GifExportConfig) =>
+    log("copy_gif", flattenGifExportConfig(config)),
+
+  downloadGif: (config: GifExportConfig) =>
+    log("download_gif", flattenGifExportConfig(config)),
 }

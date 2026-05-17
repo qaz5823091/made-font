@@ -155,6 +155,10 @@ function UsagePage() {
         body={t("help.usage.image.body")}
       /> */}
       <Block
+        title={t("help.usage.animation.title")}
+        body={t("help.usage.animation.body")}
+      />
+      <Block
         title={t("help.usage.tips.title")}
         body={t("help.usage.tips.body")}
       />

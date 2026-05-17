@@ -57,7 +57,7 @@ export async function buildPureSvg(
   if (!mctx) throw new Error("Canvas measure context unavailable")
   mctx.font = cssFontShorthand(style)
   const metrics = measureText(mctx, text, style)
-  const w = Math.max(Math.ceil(metrics.width + padding * 2), 64)
+  const w = Math.max(Math.ceil(metrics.inkWidth + padding * 2), 64)
   const h = Math.max(Math.ceil(metrics.height + padding * 2), 64)
 
   const family = getFamily(style.family)

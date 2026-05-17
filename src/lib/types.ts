@@ -23,6 +23,9 @@ export type TextStyle = {
   color: string
   bgMode: BgMode
   align: "left" | "center" | "right"
+  /** 0 = straight (no curve). 1 = text wraps fully into a circle. The circle's
+   * center is pulled in from infinity as this value rises. */
+  curve: number
 }
 
 export type TextLayer = {
@@ -55,6 +58,7 @@ export const DEFAULT_STYLE: TextStyle = {
   color: "#111827",
   bgMode: "transparent",
   align: "center",
+  curve: 0,
 }
 
 export function newLayerId(): string {

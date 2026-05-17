@@ -125,3 +125,13 @@ export function checkerBackgroundStyle(textColor: string): {
     backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0",
   }
 }
+
+/**
+ * Same contrast logic as checkerBackgroundStyle, but a single flat color —
+ * used in places (e.g. the animation studio) where the checker mosaic would
+ * compete visually with a moving subject. Light text → dark surface, dark
+ * text → light surface.
+ */
+export function solidBackdropColor(textColor: string): string {
+  return perceivedLuma(textColor) > 0.55 ? "#0b1220" : "#ffffff"
+}

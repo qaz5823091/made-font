@@ -235,6 +235,36 @@ export function StyleControls({ style, onChange }: Props) {
           }))}
         />
       </div>
+
+      {/* Curve: bi-directional. Center detent = 0 = straight text. Sliding
+          right pulls the circle center under the text (smile arc); sliding
+          left pulls it above (frown arc). Magnitude controls wrap fraction. */}
+      <div>
+        <div className="flex items-center justify-between">
+          <Label>{t("panel.curve")}</Label>
+          <span className="text-[10px] tabular-nums text-muted-foreground">
+            {Math.round(style.curve * 100)}
+          </span>
+        </div>
+        <input
+          type="range"
+          min={-100}
+          max={100}
+          step={1}
+          value={Math.round(style.curve * 100)}
+          onChange={(e) => {
+            // Magnetic snap zone around 0 so the user can flick back to
+            // "straight text" without having to hit the exact center pixel.
+            const raw = Number(e.target.value)
+            const snapped = Math.abs(raw) < 5 ? 0 : raw
+            set("curve", snapped / 100)
+          }}
+          // Fire once on release so GA captures committed intent without a
+          // per-frame storm during the drag.
+          onPointerUp={() => track.changeCurve(style.curve)}
+          className="mt-1 h-7 w-full accent-primary"
+        />
+      </div>
     </div>
   )
 }
