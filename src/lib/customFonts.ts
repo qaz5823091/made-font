@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { FontFamily, CUSTOM_FONTS, customFontUrls, fontCssFamily } from "./fonts"
+import { FontFamily, CUSTOM_FONTS, customFontUrls } from "./fonts"
 
 const fontEventTarget = new EventTarget()
 function notifyFontsChanged() {
