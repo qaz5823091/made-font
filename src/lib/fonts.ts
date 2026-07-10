@@ -9,7 +9,11 @@ export type FontFamily = {
   ext: "otf" | "ttf"
   /** File suffix per variant, joined as `${id}-${suffix}.${ext}`. */
   variants: Partial<Record<FontVariantKey, string>>
+  isCustom?: boolean
 }
+
+export const CUSTOM_FONTS: FontFamily[] = []
+export const customFontUrls = new Map<string, string>()
 
 export const FONT_FAMILIES: FontFamily[] = [
   {
@@ -61,7 +65,7 @@ export const FONT_FAMILIES: FontFamily[] = [
 export const FONT_FAMILY_IDS = FONT_FAMILIES.map((f) => f.id)
 
 export function getFamily(id: string): FontFamily {
-  const f = FONT_FAMILIES.find((x) => x.id === id)
+  const f = FONT_FAMILIES.find((x) => x.id === id) || CUSTOM_FONTS.find((x) => x.id === id)
   if (!f) throw new Error(`Unknown font family: ${id}`)
   return f
 }
@@ -99,6 +103,11 @@ export function hasVariant(
 }
 
 export function fontFileUrl(family: FontFamily, key: FontVariantKey): string {
+  if (family.isCustom) {
+    const url = customFontUrls.get(family.id)
+    if (!url) throw new Error(`${family.id} custom URL not found`)
+    return url
+  }
   const suffix = family.variants[key]
   if (!suffix) throw new Error(`${family.id} has no variant ${key}`)
   return `${import.meta.env.BASE_URL}fonts/${family.id}/${family.id}-${suffix}.${family.ext}`

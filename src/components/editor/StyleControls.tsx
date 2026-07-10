@@ -16,6 +16,7 @@ import {
   isFontLoaded,
   resolveVariant,
 } from "@/lib/fonts"
+import { useCustomFonts, importCustomFont } from "@/lib/customFonts"
 import {
   LINE_PRESETS,
   SIZE_MAX,
@@ -64,6 +65,7 @@ const FAMILY_LABELS: Record<string, string> = {
 
 export function StyleControls({ style, onChange }: Props) {
   const { t } = useI18n()
+  const customFonts = useCustomFonts()
   const family = getFamily(style.family)
   const activeVariant = resolveVariant(family, style.bold, style.italic)
   const fontLoaded = isFontLoaded(style.family, activeVariant)
@@ -179,11 +181,29 @@ export function StyleControls({ style, onChange }: Props) {
         <SelectField
           label={t("panel.family")}
           value={style.family}
-          onChange={(v) => { set("family", v); track.changeFont(v) }}
-          options={FONT_FAMILIES.map((f) => ({
-            value: f.id,
-            label: FAMILY_LABELS[f.id] ?? f.id,
-          }))}
+          onChange={async (v) => {
+            if (v === "__import_font__") {
+              const family = await importCustomFont(t)
+              if (family) {
+                set("family", family.id)
+                track.changeFont(family.id)
+              }
+              return
+            }
+            set("family", v)
+            track.changeFont(v)
+          }}
+          options={[
+            ...FONT_FAMILIES.map((f) => ({
+              value: f.id,
+              label: FAMILY_LABELS[f.id] ?? f.id,
+            })),
+            ...customFonts.map((f) => ({
+              value: f.id,
+              label: f.id,
+            })),
+            { value: "__import_font__", label: `+ ${t("font.import")}` }
+          ]}
         />
         <div>
           <Label>

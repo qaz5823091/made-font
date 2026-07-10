@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { HelpCircle, ImageIcon, Monitor, Moon, Sun, Type } from "lucide-react"
 import { PureEditor } from "@/components/editor/PureEditor"
 import { MobileEditor } from "@/components/editor/MobileEditor"
@@ -21,6 +21,7 @@ import {
   type Theme,
 } from "@/lib/theme"
 import { track } from "@/lib/analytics"
+import { initCustomFonts } from "@/lib/customFonts"
 
 type Mode = "pure" | "image"
 
@@ -50,6 +51,10 @@ function Shell() {
   const [pureStyle, setPureStyle] = useState<TextStyle>(DEFAULT_STYLE)
   const [mobileEditing, setMobileEditing] = useState(false)
   const [animationOpen, setAnimationOpen] = useState(false)
+
+  useEffect(() => {
+    initCustomFonts()
+  }, [])
 
   const flash = (msg: string) => {
     setToast(msg)

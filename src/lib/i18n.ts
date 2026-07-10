@@ -86,6 +86,9 @@ const ZH: Messages = {
 
   "font.loading": "載入字型中…",
   "font.newText": "新文字",
+  "font.import": "匯入字體",
+  "font.importFailed": "匯入字體失敗",
+  "font.quotaExceeded": "儲存空間不足，無法儲存字體。",
   "pure.placeholderText": "我愛 MadeFont",
 
   "help.button": "說明與條款",
@@ -221,6 +224,9 @@ const EN: Messages = {
 
   "font.loading": "Loading font…",
   "font.newText": "New text",
+  "font.import": "Import font",
+  "font.importFailed": "Failed to import font",
+  "font.quotaExceeded": "Storage quota exceeded. Cannot save font.",
   "pure.placeholderText": "I love MadeFont",
 
   "help.button": "Help & Licenses",
