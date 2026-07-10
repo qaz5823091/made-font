@@ -183,7 +183,7 @@ export function StyleControls({ style, onChange }: Props) {
           value={style.family}
           onChange={async (v) => {
             if (v === "__import_font__") {
-              const family = await importCustomFont(t)
+              const family = await importCustomFont(t, () => {})
               if (family) {
                 set("family", family.id)
                 track.changeFont(family.id)

@@ -22,6 +22,7 @@ import {
   hasVariant,
   resolveVariant,
 } from "@/lib/fonts"
+import { useCustomFonts, importCustomFont } from "@/lib/customFonts"
 import {
   canvasPadding,
   cssFontShorthand,
@@ -72,7 +73,7 @@ const FAMILY_LABELS: Record<string, string> = {
   BpmfZihiKaiStd: "字嗨注音標楷",
 }
 
-type Panel = "color" | "curve" | null
+type Panel = "color" | "curve" | "family" | null
 
 type Props = {
   text: string
@@ -110,6 +111,11 @@ export function MobileEditor({
   const colorBtnRef = useRef<HTMLButtonElement>(null)
   const curvePopoverRef = useRef<HTMLDivElement>(null)
   const curveBtnRef = useRef<HTMLButtonElement>(null)
+  const customFonts = useCustomFonts()
+  const familyBtnRef = useRef<HTMLButtonElement>(null)
+  const familyPopoverRef = useRef<HTMLDivElement>(null)
+  const longPressTimer = useRef<number | null>(null)
+  const isLongPress = useRef(false)
 
   // Track stage width — feeds both the auto-fit loop and the canvas wrap width.
   useLayoutEffect(() => {
@@ -242,6 +248,8 @@ export function MobileEditor({
       if (colorBtnRef.current?.contains(target)) return
       if (curvePopoverRef.current?.contains(target)) return
       if (curveBtnRef.current?.contains(target)) return
+      if (familyPopoverRef.current?.contains(target)) return
+      if (familyBtnRef.current?.contains(target)) return
       setOpenPanel(null)
     }
     document.addEventListener("pointerdown", handler)
@@ -397,8 +405,9 @@ export function MobileEditor({
   const canItalic = hasVariant(family, style.bold, true)
 
   const cycleFamily = () => {
-    const idx = FONT_FAMILIES.findIndex((f) => f.id === style.family)
-    const next = FONT_FAMILIES[(idx + 1) % FONT_FAMILIES.length]
+    const allFonts = [...FONT_FAMILIES, ...customFonts]
+    const idx = allFonts.findIndex((f) => f.id === style.family)
+    const next = allFonts[(idx + 1) % allFonts.length]
     set("family", next.id)
     track.changeFont(next.id)
     flash(FAMILY_LABELS[next.id] ?? next.id)
@@ -408,6 +417,26 @@ export function MobileEditor({
     const next = BG_MODES[(idx + 1) % BG_MODES.length]
     set("bgMode", next)
     track.changeStyle("bg_mode", next)
+  }
+
+  const handleFamilyPointerDown = () => {
+    isLongPress.current = false
+    longPressTimer.current = window.setTimeout(() => {
+      isLongPress.current = true
+      setOpenPanel(openPanel === "family" ? null : "family")
+    }, 500)
+  }
+
+  const handleFamilyPointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
+  const handleFamilyClick = () => {
+    if (isLongPress.current) return
+    cycleFamily()
   }
 
   const enterEditing = () => {
@@ -677,11 +706,17 @@ export function MobileEditor({
             />
           </button>
           <button
+            ref={familyBtnRef}
             type="button"
-            onClick={cycleFamily}
+            onPointerDown={handleFamilyPointerDown}
+            onPointerUp={handleFamilyPointerUp}
+            onPointerLeave={handleFamilyPointerUp}
+            onClick={handleFamilyClick}
             aria-label={t("panel.family")}
             title={FAMILY_LABELS[style.family] ?? style.family}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-background"
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-full ${
+              openPanel === "family" ? "bg-primary text-primary-foreground" : "bg-background"
+            }`}
           >
             <TypeIcon className="h-4 w-4" />
           </button>
@@ -793,6 +828,55 @@ export function MobileEditor({
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Family popover */}
+      {openPanel === "family" && (
+        <div
+          ref={familyPopoverRef}
+          onMouseDown={preserveFocusIfEditing}
+          style={{ bottom: keyboardOffset + 80 }}
+          className="absolute left-1/2 -translate-x-1/2 z-30 w-[min(16rem,calc(100vw-1.5rem))] max-h-[50vh] overflow-y-auto rounded-2xl bg-background/95 p-2 shadow-xl ring-1 ring-black/10 backdrop-blur flex flex-col gap-1"
+        >
+          <div className="mb-1 px-2 pt-1 flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              {t("panel.family")}
+            </span>
+          </div>
+          {[...FONT_FAMILIES, ...customFonts].map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => {
+                set("family", f.id)
+                track.changeFont(f.id)
+                setOpenPanel(null)
+              }}
+              className={`text-left px-3 py-2 text-sm rounded-md transition ${
+                style.family === f.id
+                  ? "bg-primary text-primary-foreground font-medium"
+                  : "hover:bg-muted text-foreground"
+              }`}
+            >
+              {FAMILY_LABELS[f.id] ?? f.id}
+            </button>
+          ))}
+          <div className="h-px bg-border my-1" />
+          <button
+            type="button"
+            onClick={async () => {
+              const family = await importCustomFont(t, setToast)
+              if (family) {
+                set("family", family.id)
+                track.changeFont(family.id)
+                setOpenPanel(null)
+              }
+            }}
+            className="text-left px-3 py-2 text-sm rounded-md hover:bg-muted text-primary transition flex items-center gap-2"
+          >
+            + {t("font.import")}
+          </button>
         </div>
       )}
 
