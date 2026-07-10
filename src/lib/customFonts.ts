@@ -66,7 +66,12 @@ export function useCustomFonts() {
   return fonts
 }
 
-export function importCustomFont(t: (key: string) => string): Promise<FontFamily | null> {
+export function importCustomFont(t: (key: string) => string, setToast: (msg: string | null) => void): Promise<FontFamily | null> {
+  const flash = (msg: string) => {
+    setToast(msg)
+    window.setTimeout(() => setToast(null), 1800)
+  }
+
   return new Promise((resolve) => {
     const input = document.createElement("input")
     input.type = "file"
@@ -90,15 +95,15 @@ export function importCustomFont(t: (key: string) => string): Promise<FontFamily
         if (family) {
           resolve(family)
         } else {
-          alert(t("font.importFailed"))
+          flash(t("font.importFailed"))
           resolve(null)
         }
       } catch (err: any) {
         console.error("Failed to import font:", err)
         if (err.name === 'QuotaExceededError') {
-          alert(t("font.quotaExceeded"))
+          flash(t("font.quotaExceeded"))
         } else {
-          alert(t("font.importFailed"))
+          flash(t("font.importFailed"))
         }
         resolve(null)
       }
