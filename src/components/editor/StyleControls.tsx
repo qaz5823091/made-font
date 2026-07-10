@@ -59,6 +59,7 @@ const FAMILY_LABELS: Record<string, string> = {
   IBMPlexSans: "IBM Plex Sans",
   DelaGothicOne: "Dela Gothic One",
   ChenYuluoyanThin: "辰宇落雁體 ChenYuluoyan",
+  BpmfZihiKaiStd: "字嗨注音標楷 BpmfZihiKaiStd",
 }
 
 export function StyleControls({ style, onChange }: Props) {

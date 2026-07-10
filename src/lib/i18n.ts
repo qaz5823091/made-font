@@ -122,11 +122,16 @@ const ZH: Messages = {
   "help.terms.font.ChenYuluoyanThin.title": "辰宇落雁體 Thin",
   "help.terms.font.ChenYuluoyanThin.desc":
     "由王立宇與劉韋辰於高中自主學習計畫中合作完成的繁體中文手寫字型，纖細而富有溫度，適合書信與抒情排版。",
+  "help.terms.font.BpmfZihiKaiStd.title": "字嗨注音標楷 BpmfZihiKaiStd",
+  "help.terms.font.BpmfZihiKaiStd.desc":
+    "ButTaiwan「注音IVS字型規格」的注音標楷體，每個漢字旁自動標上注音。漢字取自全字庫正楷體（政府開放資料），注音符號衍生自思源宋體。",
   "help.terms.label.repo": "原始 Repo",
   "help.terms.label.license": "授權",
   "help.terms.label.basedOn": "衍生自",
   "help.terms.license.ofl": "SIL Open Font License 1.1",
+  "help.terms.license.bpmfZihiKai": "CC BY 4.0＋SIL OFL 1.1",
   "help.terms.sourceHan": "Adobe Source Han Serif",
+  "help.terms.twKai": "全字庫正楷體 TW-Kai",
   "help.terms.disclaimer.title": "免責",
   "help.terms.disclaimer.body":
     "本服務由 @cppdesigns 維護，不對輸出結果負責。請確認你輸入的內容與輸出的圖片不侵犯第三方權益。",
@@ -252,11 +257,16 @@ const EN: Messages = {
   "help.terms.font.ChenYuluoyanThin.title": "ChenYuluoyan Thin (辰宇落雁體)",
   "help.terms.font.ChenYuluoyanThin.desc":
     "A handwritten Traditional Chinese typeface by Wang Li-Yu and Liu Wei-Chen — delicate strokes with a warm, personal feel for letters and lyrical layouts.",
+  "help.terms.font.BpmfZihiKaiStd.title": "BpmfZihiKaiStd (字嗨注音標楷)",
+  "help.terms.font.BpmfZihiKaiStd.desc":
+    "A kai-script font from ButTaiwan's Bopomofo IVS spec — every hanzi carries zhuyin (bopomofo) annotations. Hanzi glyphs come from Taiwan's open-government TW-Kai; the bopomofo derives from Source Han Serif.",
   "help.terms.label.repo": "Source repo",
   "help.terms.label.license": "License",
   "help.terms.label.basedOn": "Based on",
   "help.terms.license.ofl": "SIL Open Font License 1.1",
+  "help.terms.license.bpmfZihiKai": "CC BY 4.0 + SIL OFL 1.1",
   "help.terms.sourceHan": "Adobe Source Han Serif",
+  "help.terms.twKai": "TW-Kai (全字庫正楷體)",
   "help.terms.disclaimer.title": "Disclaimer",
   "help.terms.disclaimer.body":
     "This service is maintained and ships as-is by @cppdesigns. You're responsible for ensuring that anything you type and anything you export does not infringe on third-party rights.",

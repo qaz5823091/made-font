@@ -5,10 +5,19 @@ import { useI18n } from "@/lib/i18n";
 type Tab = "usage" | "terms";
 
 type FontEntry = {
-  key: "GenYoMin2TW" | "IBMPlexSans" | "DelaGothicOne" | "ChenYuluoyanThin";
+  key:
+    | "GenYoMin2TW"
+    | "IBMPlexSans"
+    | "DelaGothicOne"
+    | "ChenYuluoyanThin"
+    | "BpmfZihiKaiStd";
   repo: string;
   license: string;
+  /** i18n key for the license link text; defaults to OFL 1.1. */
+  licenseLabel?: string;
   basedOn?: string;
+  /** i18n key for the based-on link text; defaults to Source Han Serif. */
+  basedOnLabel?: string;
 };
 
 const FONTS: FontEntry[] = [
@@ -32,6 +41,16 @@ const FONTS: FontEntry[] = [
     key: "ChenYuluoyanThin",
     repo: "https://github.com/Chenyu-otf/chenyuluoyan_thin",
     license: "https://github.com/Chenyu-otf/chenyuluoyan_thin/blob/main/license.txt",
+  },
+  {
+    key: "BpmfZihiKaiStd",
+    repo: "https://github.com/ButTaiwan/bpmfvs",
+    // Bundled alongside the font file — the release zip is the authoritative
+    // license source (the repo has no standalone license page for this font).
+    license: `${import.meta.env.BASE_URL}fonts/BpmfZihiKaiStd/LICENSE-ZihiKaiStd.txt`,
+    licenseLabel: "help.terms.license.bpmfZihiKai",
+    basedOn: "https://data.gov.tw/dataset/5961",
+    basedOnLabel: "help.terms.twKai",
   },
 ];
 
@@ -198,7 +217,7 @@ function TermsPage() {
                 label={t("help.terms.label.license")}
                 value={
                   <ExtLink href={f.license}>
-                    {t("help.terms.license.ofl")}
+                    {t(f.licenseLabel ?? "help.terms.license.ofl")}
                   </ExtLink>
                 }
               />
@@ -207,7 +226,7 @@ function TermsPage() {
                   label={t("help.terms.label.basedOn")}
                   value={
                     <ExtLink href={f.basedOn}>
-                      {t("help.terms.sourceHan")}
+                      {t(f.basedOnLabel ?? "help.terms.sourceHan")}
                     </ExtLink>
                   }
                 />

@@ -48,6 +48,14 @@ export const FONT_FAMILIES: FontFamily[] = [
       regular: "Regular",
     },
   },
+  {
+    id: "BpmfZihiKaiStd",
+    format: "truetype",
+    ext: "ttf",
+    variants: {
+      regular: "Regular",
+    },
+  },
 ]
 
 export const FONT_FAMILY_IDS = FONT_FAMILIES.map((f) => f.id)
