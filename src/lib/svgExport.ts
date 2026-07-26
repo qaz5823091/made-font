@@ -56,6 +56,11 @@ function num(n: number): string {
   return String(Math.round(n * 100) / 100)
 }
 
+/**
+ * `padding` is caller-supplied so the SVG can match whatever raster render it
+ * accompanies — pass `canvasPadding(style, basePadding)` (never a hardcoded
+ * number) or a bg-on export will not have the same edge gap as the PNG.
+ */
 export async function buildPureSvg(
   text: string,
   style: TextStyle,

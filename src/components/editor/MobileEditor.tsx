@@ -296,7 +296,8 @@ export function MobileEditor({
 
   // Auto-fit: shrink displaySize until textarea fits inside its own inner box.
   // Using ta.client* (rather than stage.client*) keeps autofit correct after
-  // the bg/padding wrapper, which trims the textarea by 2 * BASE_PADDING per axis.
+  // the bg/padding wrapper, which trims the textarea by twice its padding per
+  // axis (canvasPadding: BASE_PADDING transparent, the smaller bg gap otherwise).
   useLayoutEffect(() => {
     if (!editing) return
     const ta = textareaRef.current
@@ -504,7 +505,9 @@ export function MobileEditor({
             style={{
               backgroundColor: bg ?? "transparent",
               borderRadius: bg ? 12 : 0,
-              padding: `${BASE_PADDING}px`,
+              // Same gap the final render uses, so switching between editing
+              // and preview doesn't move the text relative to the bg edge.
+              padding: `${canvasPadding(style, BASE_PADDING)}px`,
               boxSizing: "border-box",
             }}
           >

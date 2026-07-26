@@ -215,14 +215,22 @@ export function measureText(
 }
 
 /**
- * Canvas-edge padding around the text. When a background color is on, we add
- * breathing room proportional to font size so wide-bearing fonts don't sit
- * flush against the bg edges in the exported image.
+ * Gap between the text and the canvas edge when a background color is on.
+ * User-chosen fixed value: the padding used to scale with font size, which
+ * pushed the text far away from the bg edges at large sizes. It deliberately
+ * ignores basePadding — the whole point is that the bg gap stays small even
+ * where the transparent-mode base padding is much larger (48 on desktop).
+ */
+const BG_PADDING = 16
+
+/**
+ * Canvas-edge padding around the text. Transparent stays on the caller's base
+ * padding; with a background on, the visible frame is the bg itself, so the
+ * text only needs a small constant gap from its edge.
  */
 export function canvasPadding(style: TextStyle, basePadding: number): number {
   if (style.bgMode === "transparent") return basePadding
-  const sized = Math.round(stylePx(style) * 0.55)
-  return Math.max(basePadding, sized)
+  return BG_PADDING
 }
 
 /**

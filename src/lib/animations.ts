@@ -212,7 +212,8 @@ export function animationCanvasSize(text: string, style: TextStyle): number {
   probe.font = cssFontShorthand(style)
   const metrics = measureText(probe, text || " ", style)
   // Leave room for translate/scale animations to push the text around without
-  // clipping. canvasPadding already grows with font size, so reuse it.
+  // clipping. Reuse canvasPadding so the margin matches the still render: the
+  // 64px base when transparent, the small fixed gap once a bg is on.
   const pad = canvasPadding(style, 64) * 2
   const ascent = stylePx(style) * styleLineHeight(style)
   const side = Math.max(metrics.inkWidth, metrics.height, ascent) + pad
