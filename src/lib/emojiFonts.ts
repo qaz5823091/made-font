@@ -3,6 +3,21 @@ import type { EmojiFamilyId } from "./types"
 /** The downloadable emoji fonts — everything except the "system" sentinel. */
 export type EmojiFontId = Exclude<EmojiFamilyId, "system">
 
+/**
+ * Correction applied to an emoji run so its glyphs match the size and vertical
+ * position of the neighbouring text. Absent from a font entry = that font needs
+ * none, and every renderer stays on its untouched code path.
+ */
+export type EmojiFontMetrics = {
+  /** Multiplier on the run's font size. 1 = unchanged. */
+  sizeAdjust: number
+  /**
+   * Baseline nudge as a fraction of the *base* (unscaled) font size.
+   * Positive draws the run lower.
+   */
+  baselineShift: number
+}
+
 export type EmojiFont = {
   id: EmojiFontId
   label: string
@@ -12,6 +27,8 @@ export type EmojiFont = {
   approxMB: number
   /** Small raster sample used by the (later phase) picker UI. */
   previewSrc: string
+  /** Optional metric correction — see EmojiFontMetrics. */
+  metrics?: EmojiFontMetrics
 }
 
 const fontUrl = (file: string) => `${import.meta.env.BASE_URL}fonts/emoji/${file}`
@@ -25,6 +42,23 @@ export const EMOJI_FONTS: EmojiFont[] = [
     file: "AppleColorEmoji.ttf",
     approxMB: 66,
     previewSrc: previewUrl("apple"),
+    // Emoji runs name the emoji font FIRST in ctx.font, so its metrics decide
+    // where textBaseline "middle" lands. AppleColorEmoji declares 0.73em/0.21em
+    // ascent/descent where Twemoji declares 0.88/0.13, which parks its ink
+    // ~0.16em above the line and renders it a few percent short.
+    //
+    // Ink boxes scanned out of a Chrome canvas at 100px, textBaseline "middle",
+    // as (height / centre offset from the draw point):
+    //   apple 97 / -16.0   twemoji 101 / 0.0   noto 104 / -6.5
+    //   the CJK text it sits beside: 93 / -1.0
+    // 1.04x and +0.14em land it at 107 / -1.0 at the 112px default: the same
+    // height band as Twemoji and Noto, and level with the text.
+    //
+    // FontFace descriptors cannot do this. Chrome does honour sizeAdjust on
+    // canvas, but ascentOverride/descentOverride only change what
+    // measureText().fontBoundingBox* reports -- the painted glyph does not
+    // move (an extreme 50%/50% override left the ink centre at -16.0).
+    metrics: { sizeAdjust: 1.04, baselineShift: 0.14 },
   },
   {
     id: "twemoji",
@@ -51,6 +85,16 @@ export function getEmojiFont(id: EmojiFontId): EmojiFont {
 /** CSS family name registered with document.fonts for this emoji font. */
 export function emojiCssFamily(id: EmojiFontId): string {
   return `emoji-${id}`
+}
+
+/**
+ * Metric correction for an emoji family, or null when it needs none ("system"
+ * and any font without a `metrics` entry). Renderers use null to stay on the
+ * exact pre-correction code path.
+ */
+export function emojiFontMetrics(id: EmojiFamilyId): EmojiFontMetrics | null {
+  if (id === "system") return null
+  return getEmojiFont(id).metrics ?? null
 }
 
 const loadingPromises = new Map<string, Promise<void>>()

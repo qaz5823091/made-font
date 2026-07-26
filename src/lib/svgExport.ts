@@ -1,6 +1,7 @@
 import {
   alignStartX,
   cssFontShorthand,
+  emojiBaselineOffset,
   measureText,
   resolveColors,
   styledRunLayout,
@@ -11,7 +12,7 @@ import {
   getFamily,
   resolveVariant,
 } from "./fonts"
-import { emojiCssFamily } from "./emojiFonts"
+import { emojiCssFamily, emojiFontMetrics } from "./emojiFonts"
 import type { TextStyle } from "./types"
 
 const fontDataUrlCache = new Map<string, Promise<string>>()
@@ -100,6 +101,14 @@ export async function buildPureSvg(
       ? null
       : `'${emojiCssFamily(style.emojiFamily)}', '${cssName}'`
 
+  // Same metric correction the canvas renderer applies to emoji runs (see
+  // EmojiFontMetrics). Emitted as attributes only when the font actually needs
+  // one, so every other font's markup is unchanged.
+  const emojiMetrics = emojiFontMetrics(style.emojiFamily)
+  const emojiAttrs = emojiMetrics
+    ? ` font-size="${num(style.size * emojiMetrics.sizeAdjust)}" dy="${num(emojiBaselineOffset(style))}"`
+    : ""
+
   const tspans = metrics.lines
     .map((line, i) => {
       const y = startY + i * lineHeight
@@ -113,7 +122,11 @@ export async function buildPureSvg(
       return layout.runs
         .map((run, r) => {
           const x = num(startX + layout.offsets[r])
-          const family = run.emoji ? ` font-family="${emojiFamilyList}"` : ""
+          // Every tspan carries an absolute x/y, so the emoji run's dy can't
+          // leak into the next one.
+          const family = run.emoji
+            ? ` font-family="${emojiFamilyList}"${emojiAttrs}`
+            : ""
           return `<tspan x="${x}" y="${y}" text-anchor="start"${family}>${escapeXml(run.text)}</tspan>`
         })
         .join("")

@@ -3,6 +3,7 @@ import { styleLineHeight, stylePx } from "./types"
 import { fontCssFamily, getFamily, resolveVariant } from "./fonts"
 import {
   emojiCssFamily,
+  emojiFontMetrics,
   isEmojiGrapheme,
   segmentGraphemes,
   splitEmojiRuns,
@@ -167,11 +168,17 @@ export function drawStyledLine(
   // resolve the anchor ourselves and lay the runs out left-to-right.
   const prevAlign = ctx.textAlign
   const emojiFont = emojiFontShorthand(style)
+  const emojiDy = emojiBaselineOffset(style)
   const startX = alignStartX(style, anchorX, layout.total)
   ctx.textAlign = "left"
   for (let i = 0; i < layout.runs.length; i++) {
-    ctx.font = layout.runs[i].emoji ? emojiFont : mainFont
-    ctx.fillText(layout.runs[i].text, startX + layout.offsets[i], y)
+    const isEmoji = layout.runs[i].emoji
+    ctx.font = isEmoji ? emojiFont : mainFont
+    ctx.fillText(
+      layout.runs[i].text,
+      startX + layout.offsets[i],
+      isEmoji ? y + emojiDy : y,
+    )
   }
   ctx.font = mainFont
   ctx.textAlign = prevAlign
@@ -321,6 +328,7 @@ export function layoutCurvedText(
   // "system" keeps every glyph on the main font, so we never even classify.
   const emojiFont =
     style.emojiFamily === "system" ? null : emojiFontShorthand(style)
+  const emojiDy = emojiFont ? emojiBaselineOffset(style) : 0
   const fonts = safeChars.map((c) =>
     emojiFont && isEmojiGrapheme(c) ? emojiFont : mainFont,
   )
@@ -424,7 +432,9 @@ export function layoutCurvedText(
       // the circle, while keeping the glyphs themselves right-side-up.
       ctx.rotate(sign * angle)
       ctx.translate(0, -sign * radius)
-      ctx.fillText(ch, 0, 0)
+      // The frame is rotated with the glyph, so +y is "lower relative to this
+      // character" on both the smile and the frown arc.
+      ctx.fillText(ch, 0, font === emojiFont ? emojiDy : 0)
       ctx.restore()
     }
   }
@@ -451,7 +461,21 @@ export function emojiFontShorthand(style: TextStyle): string {
   const family = getFamily(style.family)
   const key = resolveVariant(family, style.bold, style.italic)
   const main = fontCssFamily(style.family, key)
-  return `${stylePx(style)}px "${emojiCssFamily(style.emojiFamily)}", "${main}"`
+  // sizeAdjust compensates fonts whose glyphs are drawn smaller than the rest
+  // at the same px. Fonts without a correction multiply by exactly 1, so the
+  // shorthand string is unchanged for them.
+  const px = stylePx(style) * (emojiFontMetrics(style.emojiFamily)?.sizeAdjust ?? 1)
+  return `${px}px "${emojiCssFamily(style.emojiFamily)}", "${main}"`
+}
+
+/**
+ * Vertical nudge (in px) for emoji runs, counteracting emoji fonts whose own
+ * ascent/descent place textBaseline "middle" off the text's centre line.
+ * 0 for "system" and for any font without a metric correction.
+ */
+export function emojiBaselineOffset(style: TextStyle): number {
+  const m = emojiFontMetrics(style.emojiFamily)
+  return m ? m.baselineShift * stylePx(style) : 0
 }
 
 export function resolveColors(style: TextStyle): { fg: string; bg: string | null } {
