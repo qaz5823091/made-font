@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { HelpCircle, ImageIcon, Monitor, Moon, Sun, Type } from "lucide-react"
 import { PureEditor } from "@/components/editor/PureEditor"
 import { MobileEditor } from "@/components/editor/MobileEditor"
@@ -6,6 +6,7 @@ import { ImageEditor } from "@/components/editor/ImageEditor"
 import { AnimationStudio } from "@/components/editor/AnimationStudio"
 import { useMediaQuery } from "@/lib/useMediaQuery"
 import { Splash } from "@/components/Splash"
+import { ShareLanding } from "@/components/ShareLanding"
 import { HelpModal } from "@/components/HelpModal"
 import {
   I18nProvider,
@@ -22,9 +23,66 @@ import {
 } from "@/lib/theme"
 import { track } from "@/lib/analytics"
 import { initCustomFonts } from "@/lib/customFonts"
+import { CUSTOM_FONTS, FONT_FAMILY_IDS } from "@/lib/fonts"
+import { loadPrefs, saveStylePref, type SharePrefMode } from "@/lib/prefs"
 import { useFlashToast } from "@/lib/useFlashToast"
 
 type Mode = "pure" | "image"
+
+const SAVE_DEBOUNCE_MS = 300
+
+/**
+ * Last session's text style, applied before first paint. A stored custom font
+ * cannot be applied yet — custom families re-register from OPFS asynchronously
+ * — so start on the default family and hand the wanted id to the restore below.
+ */
+function initialPrefs(): { style: TextStyle; pendingFamily: string | null } {
+  const stored = loadPrefs()?.style
+  if (!stored) return { style: DEFAULT_STYLE, pendingFamily: null }
+  if (FONT_FAMILY_IDS.includes(stored.family)) {
+    return { style: stored, pendingFamily: null }
+  }
+  return {
+    style: { ...stored, family: DEFAULT_STYLE.family },
+    pendingFamily: stored.family,
+  }
+}
+
+const INITIAL_PREFS = initialPrefs()
+
+type ShareLaunch = {
+  text: string
+  /** Resolved mode: URL override wins, then the remembered preference. */
+  mode: SharePrefMode | null
+  /** True when `mode` came from storage rather than the URL. */
+  remembered: boolean
+}
+
+/**
+ * Reads the Web Share Target hand-off (manifest share_target is GET + action
+ * "/", so the payload arrives as query params) and the iOS Shortcut deep link.
+ * Resolved once at module scope: the URL is wiped on mount, so re-parsing later
+ * would come up empty.
+ */
+function initialShare(): ShareLaunch | null {
+  if (typeof window === "undefined") return null
+  const params = new URLSearchParams(window.location.search)
+  const text = (["text", "url", "title"] as const)
+    .map((key) => params.get(key)?.trim() ?? "")
+    .find((value) => value !== "")
+  if (!text) return null
+  const raw = params.get("mode")
+  const override: SharePrefMode | null =
+    raw === "quick" || raw === "custom" ? raw : null
+  const stored = loadPrefs()?.shareMode ?? null
+  return {
+    text,
+    mode: override ?? stored,
+    remembered: !override && stored !== null,
+  }
+}
+
+const SHARE = initialShare()
 
 const NEXT_THEME: Record<Theme, Theme> = {
   system: "light",
@@ -44,18 +102,60 @@ function Shell() {
   const { theme, setTheme } = useTheme()
   const isDesktop = useMediaQuery("(min-width: 768px)")
   const [mode, setMode] = useState<Mode>("pure")
-  const [splashed, setSplashed] = useState(false)
+  // A share hand-off is already an intentional launch — the splash would just
+  // stand between the user and their text.
+  const [splashed, setSplashed] = useState(!!SHARE)
   const [helpOpen, setHelpOpen] = useState(false)
   const { toast, flash } = useFlashToast()
   // Shared editor state — keeps content consistent across mobile/desktop layouts.
-  const [pureText, setPureText] = useState(() => t("pure.placeholderText"))
-  const [pureStyle, setPureStyle] = useState<TextStyle>(DEFAULT_STYLE)
+  const [pureText, setPureText] = useState(() =>
+    SHARE?.mode === "custom" ? SHARE.text : t("pure.placeholderText"),
+  )
+  const [pureStyle, setPureStyle] = useState<TextStyle>(INITIAL_PREFS.style)
   const [mobileEditing, setMobileEditing] = useState(false)
   const [animationOpen, setAnimationOpen] = useState(false)
+  // "custom" was already applied to pureText above, so it never sees a landing.
+  const [landingOpen, setLandingOpen] = useState(
+    () => !!SHARE && SHARE.mode !== "custom",
+  )
+  const pendingFamilyRef = useRef(INITIAL_PREFS.pendingFamily)
+  const prefsSettledRef = useRef(false)
 
   useEffect(() => {
-    initCustomFonts()
+    if (!SHARE) return
+    // Drop the shared payload from the address bar so a reload (or an
+    // "add to home screen") doesn't replay the share. replaceState to the same
+    // pathname is idempotent, so StrictMode's double-invoke is harmless.
+    window.history.replaceState(null, "", window.location.pathname)
+    // The splash is skipped on this path, and it's what normally fires this.
+    track.appOpen()
   }, [])
+
+  useEffect(() => {
+    // Runs once the OPFS fonts are back (or failed to come back): finish
+    // restoring the stored style, then unpark persistence. Saving earlier would
+    // write the temporary built-in fallback over the stored custom family.
+    const settle = () => {
+      const pending = pendingFamilyRef.current
+      pendingFamilyRef.current = null
+      if (pending && CUSTOM_FONTS.some((f) => f.id === pending)) {
+        setPureStyle((s) =>
+          // Bail out if the user already picked a family while fonts loaded.
+          s.family === DEFAULT_STYLE.family ? { ...s, family: pending } : s,
+        )
+      }
+      prefsSettledRef.current = true
+    }
+    initCustomFonts().then(settle, settle)
+  }, [])
+
+  // Persist style choices only (never the text) so a return visit starts from
+  // the same look. Debounced: sliders and pinch gestures fire continuously.
+  useEffect(() => {
+    if (!prefsSettledRef.current) return
+    const id = setTimeout(() => saveStylePref(pureStyle), SAVE_DEBOUNCE_MS)
+    return () => clearTimeout(id)
+  }, [pureStyle])
 
   const handleSelectImageMode = () => {
     if (IMAGE_MODE_ENABLED) {
@@ -70,6 +170,24 @@ function Shell() {
     return (
       <main className="h-[100dvh] bg-background text-foreground">
         <Splash onDone={() => { setSplashed(true); track.appOpen() }} />
+      </main>
+    )
+  }
+
+  if (SHARE && landingOpen) {
+    return (
+      <main className="h-[100dvh] bg-background text-foreground">
+        <ShareLanding
+          text={SHARE.text}
+          style={pureStyle}
+          autoCopy={SHARE.mode === "quick"}
+          showRemember={SHARE.mode === null}
+          rememberedQuick={SHARE.mode === "quick" && SHARE.remembered}
+          onCustom={() => {
+            setPureText(SHARE.text)
+            setLandingOpen(false)
+          }}
+        />
       </main>
     )
   }
