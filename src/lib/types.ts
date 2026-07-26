@@ -2,6 +2,9 @@ export type BgMode = "transparent" | "complement-bg" | "complement-text"
 
 export type LinePreset = "S" | "M" | "L"
 
+/** Emoji font choice — "system" means no webfont (device default emoji). */
+export type EmojiFamilyId = "system" | "apple" | "twemoji" | "noto"
+
 export const LINE_PRESETS: Record<LinePreset, { value: number }> = {
   S: { value: 1.05 },
   M: { value: 1.4 },
@@ -26,6 +29,10 @@ export type TextStyle = {
   /** 0 = straight (no curve). 1 = text wraps fully into a circle. The circle's
    * center is pulled in from infinity as this value rises. */
   curve: number
+  /** Emoji graphemes render in this font while the rest of the text keeps
+   * `family`. "system" = device default emoji font, no webfont downloaded
+   * (and every render path stays on its single-font fast path). */
+  emojiFamily: EmojiFamilyId
 }
 
 export type TextLayer = {
@@ -59,6 +66,7 @@ export const DEFAULT_STYLE: TextStyle = {
   bgMode: "transparent",
   align: "center",
   curve: 0,
+  emojiFamily: "system",
 }
 
 export function newLayerId(): string {

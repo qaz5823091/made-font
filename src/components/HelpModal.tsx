@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { ExternalLink, HelpCircle, ScrollText, X } from "lucide-react";
+import { ExternalLink, HelpCircle, RotateCcw, ScrollText, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { saveShareModePref } from "@/lib/prefs";
+import { track } from "@/lib/analytics";
 
 type Tab = "usage" | "terms";
 
@@ -52,6 +54,31 @@ const FONTS: FontEntry[] = [
     basedOn: "https://data.gov.tw/dataset/5961",
     basedOnLabel: "help.terms.twKai",
   },
+];
+
+type EmojiEntry = {
+  key: "noto" | "twemoji" | "apple";
+  repo?: string;
+  license?: string;
+  /** i18n key for the license link text; defaults to OFL 1.1. */
+  licenseLabel?: string;
+};
+
+const EMOJI_CREDITS: EmojiEntry[] = [
+  {
+    key: "noto",
+    repo: "https://github.com/googlefonts/noto-emoji",
+    license: "https://fonts.google.com/noto/specimen/Noto+Color+Emoji/license",
+  },
+  {
+    key: "twemoji",
+    repo: "https://github.com/mozilla/twemoji-colr",
+    license: "https://creativecommons.org/licenses/by/4.0/",
+    licenseLabel: "help.terms.license.ccby",
+  },
+  // Apple carries no repo / license link on purpose: the artwork isn't offered
+  // under an open license, and the card text says exactly that.
+  { key: "apple" },
 ];
 
 export function HelpModal({
@@ -173,6 +200,7 @@ function UsagePage() {
         title={t("help.usage.image.title")}
         body={t("help.usage.image.body")}
       /> */}
+      <ShareBlock />
       <Block
         title={t("help.usage.animation.title")}
         body={t("help.usage.animation.body")}
@@ -181,6 +209,86 @@ function UsagePage() {
         title={t("help.usage.tips.title")}
         body={t("help.usage.tips.body")}
       />
+    </div>
+  );
+}
+
+const SHORTCUT_STEPS = ["s1", "s2", "s3", "s4", "s5"] as const;
+
+/**
+ * Share-target help. It carries the platform caveats (the feature needs an
+ * installed PWA, and iOS has no web share targets at all) plus the escape
+ * hatch for users who remembered "custom" — they never see the landing again,
+ * so this is the only place left to undo it.
+ */
+function ShareBlock() {
+  const { t } = useI18n();
+  const [reset, setReset] = useState(false);
+
+  return (
+    <div>
+      <h3 className="mb-1 text-sm font-semibold">
+        {t("help.usage.share.title")}
+      </h3>
+      <p className="text-muted-foreground">{t("help.usage.share.body")}</p>
+
+      <div className="mt-2 space-y-3 rounded-lg border bg-background/60 p-3">
+        <div>
+          <div className="text-xs font-semibold">
+            {t("help.usage.share.android.title")}
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {t("help.usage.share.android.body")}
+          </p>
+        </div>
+
+        <div>
+          <div className="text-xs font-semibold">
+            {t("help.usage.share.ios.title")}
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {t("help.usage.share.ios.body")}
+          </p>
+          <div className="mt-2 text-xs font-medium">
+            {t("help.usage.share.ios.shortcut.title")}
+          </div>
+          <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-xs text-muted-foreground">
+            {SHORTCUT_STEPS.map((step) => (
+              <li key={step} className="break-words">
+                {t(`help.usage.share.ios.shortcut.${step}`)}
+              </li>
+            ))}
+          </ol>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t("help.usage.share.ios.alt")}
+          </p>
+        </div>
+
+        <div className="border-t pt-3">
+          <p className="text-xs text-muted-foreground">
+            {t("help.usage.share.reset.body")}
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                saveShareModePref(null);
+                track.shareRemember("cleared");
+                setReset(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-2.5 py-1.5 text-xs font-medium shadow-sm active:scale-[0.98]"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              {t("help.usage.share.reset.button")}
+            </button>
+            {reset && (
+              <span className="text-xs font-medium text-primary">
+                {t("help.usage.share.reset.done")}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -232,6 +340,54 @@ function TermsPage() {
                 />
               )}
             </dl>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold">
+            {t("help.terms.emoji.title")}
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("help.terms.emoji.intro")}
+          </p>
+        </div>
+        {EMOJI_CREDITS.map((e) => (
+          <div
+            key={e.key}
+            className="rounded-lg border bg-background/60 p-3 shadow-sm"
+          >
+            <div className="text-sm font-semibold">
+              {t(`help.terms.emoji.${e.key}.title`)}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t(`help.terms.emoji.${e.key}.desc`)}
+            </p>
+            {(e.repo || e.license) && (
+              <dl className="mt-2 space-y-1 text-[12px]">
+                {e.repo && (
+                  <Row
+                    label={t("help.terms.label.repo")}
+                    value={
+                      <ExtLink href={e.repo}>
+                        {e.repo.replace("https://", "")}
+                      </ExtLink>
+                    }
+                  />
+                )}
+                {e.license && (
+                  <Row
+                    label={t("help.terms.label.license")}
+                    value={
+                      <ExtLink href={e.license}>
+                        {t(e.licenseLabel ?? "help.terms.license.ofl")}
+                      </ExtLink>
+                    }
+                  />
+                )}
+              </dl>
+            )}
           </div>
         ))}
       </div>

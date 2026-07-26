@@ -1,7 +1,9 @@
 import {
+  alignStartX,
   cssFontShorthand,
   measureText,
   resolveColors,
+  styledRunLayout,
 } from "./canvas"
 import {
   fontCssFamily,
@@ -9,6 +11,7 @@ import {
   getFamily,
   resolveVariant,
 } from "./fonts"
+import { emojiCssFamily } from "./emojiFonts"
 import type { TextStyle } from "./types"
 
 const fontDataUrlCache = new Map<string, Promise<string>>()
@@ -47,6 +50,11 @@ function escapeXml(s: string): string {
     .replace(/"/g, "&quot;")
 }
 
+/** Trims float noise out of coordinate attributes. */
+function num(n: number): string {
+  return String(Math.round(n * 100) / 100)
+}
+
 export async function buildPureSvg(
   text: string,
   style: TextStyle,
@@ -83,11 +91,33 @@ export async function buildPureSvg(
   const lineHeight = metrics.lineHeightPx
   const startY = padding + lineHeight / 2
 
+  // Emoji fonts are 1.5–66 MB, so unlike the main font they are never inlined
+  // here. We still name the family first in font-family so a viewer that has it
+  // installed (or renders inside this app) picks it up; everywhere else the
+  // emoji simply fall back to the viewer's system emoji font.
+  const emojiFamilyList =
+    style.emojiFamily === "system"
+      ? null
+      : `'${emojiCssFamily(style.emojiFamily)}', '${cssName}'`
+
   const tspans = metrics.lines
-    .map(
-      (line, i) =>
-        `<tspan x="${anchorX}" y="${startY + i * lineHeight}">${escapeXml(line)}</tspan>`,
-    )
+    .map((line, i) => {
+      const y = startY + i * lineHeight
+      const layout = emojiFamilyList ? styledRunLayout(mctx, line, style) : null
+      if (!layout) {
+        return `<tspan x="${anchorX}" y="${y}">${escapeXml(line)}</tspan>`
+      }
+      // Mixed-font line: text-anchor can't span runs, so each run gets an
+      // absolute x from the same layout the canvas renderer uses.
+      const startX = alignStartX(style, anchorX, layout.total)
+      return layout.runs
+        .map((run, r) => {
+          const x = num(startX + layout.offsets[r])
+          const family = run.emoji ? ` font-family="${emojiFamilyList}"` : ""
+          return `<tspan x="${x}" y="${y}" text-anchor="start"${family}>${escapeXml(run.text)}</tspan>`
+        })
+        .join("")
+    })
     .join("")
 
   const bgRect = bg

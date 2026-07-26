@@ -24,6 +24,7 @@ const ZH: Messages = {
   "panel.bg": "底色",
   "panel.style": "字型樣式",
   "panel.family": "字型",
+  "panel.emoji": "Emoji 字型",
   "style.bold": "粗體",
   "style.italic": "斜體",
   "panel.align": "對齊",
@@ -89,7 +90,20 @@ const ZH: Messages = {
   "font.import": "匯入字體",
   "font.importFailed": "匯入字體失敗",
   "font.quotaExceeded": "儲存空間不足，無法儲存字體。",
+  "emoji.system": "預設（本機）",
+  "emoji.loading": "載入中…",
   "pure.placeholderText": "我愛 MadeFont",
+
+  "share.title": "快速製作",
+  "share.subtitle": "收到分享的文字，已套用你上次的樣式。",
+  "share.quick": "快速複製",
+  "share.quickAgain": "再複製一次",
+  "share.custom": "自訂調整",
+  "share.copied": "已複製",
+  "share.copiedHint": "回到原本的 App 貼上即可",
+  "share.remember": "記住我的選擇，下次不再詢問",
+  "share.rememberedQuick": "已記住快速模式 · 取消",
+  "share.rememberCleared": "已取消，下次會再問一次",
 
   "help.button": "說明與條款",
   "help.close": "關閉",
@@ -103,6 +117,29 @@ const ZH: Messages = {
   "help.usage.image.title": "圖片合成模式",
   "help.usage.image.body":
     "之後會開放：放一張圖、把文字疊在上面，可以一直疊。複製跟下載的方式跟純文字模式一樣。",
+  "help.usage.share.title": "快速製作（分享）",
+  "help.usage.share.body":
+    "在其他 App 選取文字 → 分享 → MadeFont，選「快速複製」直接用上次的樣式出圖進剪貼簿，或「自訂調整」進編輯器。",
+  "help.usage.share.android.title": "Android／桌面版 Chrome、Edge",
+  "help.usage.share.android.body":
+    "必須先安裝（網址列的「安裝」或選單中的「加到主畫面」）後，MadeFont 才會出現在系統分享選單。",
+  "help.usage.share.ios.title": "iOS／iPadOS",
+  "help.usage.share.ios.body":
+    "Safari 不支援網頁分享目標（加到主畫面也一樣）。",
+  "help.usage.share.ios.shortcut.title": "替代做法一（推薦）：用「捷徑」App 建立分享捷徑",
+  "help.usage.share.ios.shortcut.s1": "打開「捷徑」App，新增一個捷徑。",
+  "help.usage.share.ios.shortcut.s2":
+    "在捷徑設定中開啟「在分享工作表中顯示」，並將輸入設為「文字」。",
+  "help.usage.share.ios.shortcut.s3": "加入動作「開啟 URL」。",
+  "help.usage.share.ios.shortcut.s4":
+    "URL 填 https://madefont.cppdesigns.cc/?text= ，後面接「捷徑輸入」變數。",
+  "help.usage.share.ios.shortcut.s5": "把捷徑命名為 MadeFont。",
+  "help.usage.share.ios.alt": "替代做法二：複製文字後直接開啟 MadeFont 貼上。",
+  "help.usage.share.reset.body":
+    "如果你之前勾了「記住我的選擇」而選了「自訂調整」，分享時就不會再出現那個畫面。按這裡改回每次詢問。",
+  "help.usage.share.reset.button": "重設分享模式偏好",
+  "help.usage.share.reset.done": "已重設",
+
   "help.usage.animation.title": "動畫模式",
   "help.usage.animation.body":
     "在純文字模式下面點「動畫模式」（手機版是膠片圖示）進入動畫工作室。底部一排是 6 種效果：脈動、彈跳、旋轉、淡入淡出、跑馬燈、波浪——點圖示或左右滑都可以切換。烏龜跟兔子之間的滑桿調速度。沒選底色時匯出會是透明背景 GIF；有選底色就是不透明的。手機如果不支援複製 GIF，會跳提示請改用下載。",
@@ -128,10 +165,23 @@ const ZH: Messages = {
   "help.terms.font.BpmfZihiKaiStd.title": "字嗨注音標楷 BpmfZihiKaiStd",
   "help.terms.font.BpmfZihiKaiStd.desc":
     "ButTaiwan「注音IVS字型規格」的注音標楷體，每個漢字旁自動標上注音。漢字取自全字庫正楷體（政府開放資料），注音符號衍生自思源宋體。",
+  "help.terms.emoji.title": "Emoji 字型",
+  "help.terms.emoji.intro":
+    "Emoji 預設使用你裝置本身的字型，不會下載任何檔案；只有在「Emoji 字型」選單挑選其他選項時，才會載入對應的字型檔。",
+  "help.terms.emoji.noto.title": "Noto Color Emoji",
+  "help.terms.emoji.noto.desc":
+    "© Google，依 SIL Open Font License 1.1 授權",
+  "help.terms.emoji.twemoji.title": "Twemoji",
+  "help.terms.emoji.twemoji.desc":
+    "圖像 © X Corp.（原 Twitter）與貢獻者，CC-BY 4.0 授權；使用 Mozilla 的 COLR 建置版（twemoji-colr）",
+  "help.terms.emoji.apple.title": "Apple Emoji",
+  "help.terms.emoji.apple.desc":
+    "Apple Emoji 字形由 Apple Inc. 設計，著作權屬於 Apple。此選項未經官方授權，僅供個人創作與預覽使用；重視授權完整性的正式或商業用途，建議改用 Noto Emoji 或 Twemoji。",
   "help.terms.label.repo": "原始 Repo",
   "help.terms.label.license": "授權",
   "help.terms.label.basedOn": "衍生自",
   "help.terms.license.ofl": "SIL Open Font License 1.1",
+  "help.terms.license.ccby": "CC BY 4.0",
   "help.terms.license.bpmfZihiKai": "CC BY 4.0＋SIL OFL 1.1",
   "help.terms.sourceHan": "Adobe Source Han Serif",
   "help.terms.twKai": "全字庫正楷體 TW-Kai",
@@ -163,6 +213,7 @@ const EN: Messages = {
   "panel.bg": "Background",
   "panel.style": "Style",
   "panel.family": "Family",
+  "panel.emoji": "Emoji font",
   "style.bold": "Bold",
   "style.italic": "Italic",
   "panel.align": "Align",
@@ -230,7 +281,20 @@ const EN: Messages = {
   "font.import": "Import font",
   "font.importFailed": "Failed to import font",
   "font.quotaExceeded": "Storage quota exceeded. Cannot save font.",
+  "emoji.system": "System (device)",
+  "emoji.loading": "Loading…",
   "pure.placeholderText": "I love MadeFont",
+
+  "share.title": "Quick make",
+  "share.subtitle": "Got your shared text — styled with what you used last.",
+  "share.quick": "Quick copy",
+  "share.quickAgain": "Copy again",
+  "share.custom": "Adjust it myself",
+  "share.copied": "Copied",
+  "share.copiedHint": "Go back to the other app and paste",
+  "share.remember": "Remember my choice, don't ask again",
+  "share.rememberedQuick": "Quick mode remembered · undo",
+  "share.rememberCleared": "Undone — you'll be asked again next time",
 
   "help.button": "Help & Licenses",
   "help.close": "Close",
@@ -244,6 +308,31 @@ const EN: Messages = {
   "help.usage.image.title": "Image-overlay mode",
   "help.usage.image.body":
     "Coming soon — drop in an image and stack text on top. Copy and Download work the same as text-only mode.",
+  "help.usage.share.title": "Quick make (share)",
+  "help.usage.share.body":
+    "In any other app, select text → Share → MadeFont. Pick “Quick copy” to render it with your last style straight onto the clipboard, or “Adjust it myself” to open the editor.",
+  "help.usage.share.android.title": "Android / desktop Chrome, Edge",
+  "help.usage.share.android.body":
+    "You have to install the app first (the Install button in the address bar, or “Add to Home screen” in the menu) before MadeFont shows up in the system share sheet.",
+  "help.usage.share.ios.title": "iOS / iPadOS",
+  "help.usage.share.ios.body":
+    "Safari does not support web share targets — adding to the Home screen doesn't help either.",
+  "help.usage.share.ios.shortcut.title":
+    "Option 1 (recommended): build a share shortcut in the Shortcuts app",
+  "help.usage.share.ios.shortcut.s1": "Open the Shortcuts app and create a new shortcut.",
+  "help.usage.share.ios.shortcut.s2":
+    "In its settings, turn on “Show in Share Sheet” and set the input type to Text.",
+  "help.usage.share.ios.shortcut.s3": "Add the “Open URL” action.",
+  "help.usage.share.ios.shortcut.s4":
+    "Set the URL to https://madefont.cppdesigns.cc/?text= followed by the Shortcut Input variable.",
+  "help.usage.share.ios.shortcut.s5": "Name the shortcut MadeFont.",
+  "help.usage.share.ios.alt":
+    "Option 2: copy the text, open MadeFont, and paste it in.",
+  "help.usage.share.reset.body":
+    "If you ticked “Remember my choice” on “Adjust it myself”, sharing skips that screen from then on. This puts it back to asking every time.",
+  "help.usage.share.reset.button": "Reset share mode preference",
+  "help.usage.share.reset.done": "Reset",
+
   "help.usage.animation.title": "Animation mode",
   "help.usage.animation.body":
     "From text-only mode, tap “Animation mode” (the film icon on mobile) to enter the studio. The bottom row holds six effects — pulse, bounce, rotate, fade, marquee, wave — tap an icon or swipe sideways to switch. The slider between the turtle and rabbit controls speed. With no background color picked, the exported GIF has a transparent background; pick one and it becomes opaque. If your device can't copy GIFs to the clipboard, a toast will tell you to download instead.",
@@ -269,10 +358,23 @@ const EN: Messages = {
   "help.terms.font.BpmfZihiKaiStd.title": "BpmfZihiKaiStd (字嗨注音標楷)",
   "help.terms.font.BpmfZihiKaiStd.desc":
     "A kai-script font from ButTaiwan's Bopomofo IVS spec — every hanzi carries zhuyin (bopomofo) annotations. Hanzi glyphs come from Taiwan's open-government TW-Kai; the bopomofo derives from Source Han Serif.",
+  "help.terms.emoji.title": "Emoji fonts",
+  "help.terms.emoji.intro":
+    "Emoji use your device's own font by default and download nothing. A font file is fetched only when you pick one of the other options from the “Emoji font” menu.",
+  "help.terms.emoji.noto.title": "Noto Color Emoji",
+  "help.terms.emoji.noto.desc":
+    "© Google, licensed under the SIL Open Font License 1.1",
+  "help.terms.emoji.twemoji.title": "Twemoji",
+  "help.terms.emoji.twemoji.desc":
+    "Artwork © X Corp. (formerly Twitter) and contributors, CC-BY 4.0; served via Mozilla's COLR build (twemoji-colr)",
+  "help.terms.emoji.apple.title": "Apple Emoji",
+  "help.terms.emoji.apple.desc":
+    "Apple emoji artwork is designed by and copyright Apple Inc. This option is provided unofficially, for personal creation and preview; for production or commercial work, consider Noto Emoji or Twemoji instead.",
   "help.terms.label.repo": "Source repo",
   "help.terms.label.license": "License",
   "help.terms.label.basedOn": "Based on",
   "help.terms.license.ofl": "SIL Open Font License 1.1",
+  "help.terms.license.ccby": "CC BY 4.0",
   "help.terms.license.bpmfZihiKai": "CC BY 4.0 + SIL OFL 1.1",
   "help.terms.sourceHan": "Adobe Source Han Serif",
   "help.terms.twKai": "TW-Kai (全字庫正楷體)",

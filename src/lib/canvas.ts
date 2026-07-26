@@ -1,6 +1,13 @@
 import type { TextLayer, TextStyle } from "./types"
 import { styleLineHeight, stylePx } from "./types"
 import { fontCssFamily, getFamily, resolveVariant } from "./fonts"
+import {
+  emojiCssFamily,
+  isEmojiGrapheme,
+  segmentGraphemes,
+  splitEmojiRuns,
+  type TextRun,
+} from "./emojiFonts"
 import { complementColor } from "./color"
 
 export type LineMetrics = {
@@ -13,29 +20,182 @@ export type LineMetrics = {
   lineHeightPx: number
 }
 
+/** Advance + ink extents of one line, relative to the glyph origin. */
+export type StyledLineMetrics = {
+  /** Total advance width (sum over runs). */
+  width: number
+  /** Ink reaching left of the origin (mirrors actualBoundingBoxLeft). */
+  inkLeft: number
+  /** Ink reaching right of the origin (mirrors actualBoundingBoxRight). */
+  inkRight: number
+}
+
+/**
+ * Returns the emoji/main runs of a line, or null when the whole line can be
+ * painted with a single font. Null is the signal to take the fast path, which
+ * must stay byte-for-byte identical to the pre-emoji renderer — so we bail out
+ * before touching the segmenter whenever the user is on the system emoji font.
+ */
+function styledRuns(line: string, style: TextStyle): TextRun[] | null {
+  if (style.emojiFamily === "system") return null
+  if (line.length === 0) return null
+  const runs = splitEmojiRuns(line)
+  if (!runs.some((r) => r.emoji)) return null
+  return runs
+}
+
+/**
+ * Measures one line, switching fonts per emoji run when needed.
+ *
+ * Measurement always happens with textAlign forced to "start" so the
+ * actualBoundingBox* values are reported relative to the glyph origin rather
+ * than the caller's alignment point; both are restored before returning.
+ */
+export function measureStyledLine(
+  ctx: CanvasRenderingContext2D,
+  line: string,
+  style: TextStyle,
+): StyledLineMetrics {
+  const prevAlign = ctx.textAlign
+  ctx.textAlign = "start"
+  const mainFont = cssFontShorthand(style)
+  const runs = styledRuns(line, style)
+
+  if (!runs) {
+    ctx.font = mainFont
+    const m = ctx.measureText(line)
+    ctx.textAlign = prevAlign
+    return {
+      width: m.width,
+      inkLeft: m.actualBoundingBoxLeft ?? 0,
+      inkRight: m.actualBoundingBoxRight ?? m.width,
+    }
+  }
+
+  // Run path: walk the advance cursor, tracking the union of every run's ink
+  // box expressed in line-origin coordinates.
+  const emojiFont = emojiFontShorthand(style)
+  let x = 0
+  let minX = Infinity
+  let maxX = -Infinity
+  for (const run of runs) {
+    ctx.font = run.emoji ? emojiFont : mainFont
+    const m = ctx.measureText(run.text)
+    const left = x - (m.actualBoundingBoxLeft ?? 0)
+    const right = x + (m.actualBoundingBoxRight ?? m.width)
+    if (left < minX) minX = left
+    if (right > maxX) maxX = right
+    x += m.width
+  }
+  ctx.font = mainFont
+  ctx.textAlign = prevAlign
+  if (minX === Infinity) return { width: x, inkLeft: 0, inkRight: x }
+  // inkLeft + inkRight stays the total ink extent, matching the fast path.
+  return { width: x, inkLeft: -minX, inkRight: maxX }
+}
+
+/** Left-to-right placement of a line's emoji/main runs, relative to its start. */
+export type StyledRunLayout = {
+  runs: TextRun[]
+  /** Advance offset of each run from the start of the line. */
+  offsets: number[]
+  /** Total advance of the line. */
+  total: number
+}
+
+/**
+ * Resolves the run layout of a line, or null when one font covers it. Exposed
+ * so exporters that place glyphs themselves (SVG tspans) share the exact
+ * geometry the canvas renderer uses.
+ *
+ * Leaves ctx.font on the main font; textAlign is untouched because advance
+ * widths don't depend on it.
+ */
+export function styledRunLayout(
+  ctx: CanvasRenderingContext2D,
+  line: string,
+  style: TextStyle,
+): StyledRunLayout | null {
+  const runs = styledRuns(line, style)
+  if (!runs) return null
+  const mainFont = cssFontShorthand(style)
+  const emojiFont = emojiFontShorthand(style)
+  const offsets: number[] = []
+  let x = 0
+  for (const run of runs) {
+    ctx.font = run.emoji ? emojiFont : mainFont
+    offsets.push(x)
+    x += ctx.measureText(run.text).width
+  }
+  ctx.font = mainFont
+  return { runs, offsets, total: x }
+}
+
+/** Where a line's leftmost glyph starts, given its anchor and total advance. */
+export function alignStartX(
+  style: TextStyle,
+  anchorX: number,
+  total: number,
+): number {
+  const shift = style.align === "center" ? 0.5 : style.align === "right" ? 1 : 0
+  return anchorX - total * shift
+}
+
+/**
+ * Draws one line at `anchorX` honouring style.align, switching fonts per emoji
+ * run when needed. `textBaseline` is the caller's business (all call sites use
+ * "middle"); font and textAlign are owned by this function.
+ */
+export function drawStyledLine(
+  ctx: CanvasRenderingContext2D,
+  line: string,
+  style: TextStyle,
+  anchorX: number,
+  y: number,
+): void {
+  const mainFont = cssFontShorthand(style)
+  const layout = styledRunLayout(ctx, line, style)
+
+  if (!layout) {
+    ctx.font = mainFont
+    ctx.textAlign = style.align
+    ctx.fillText(line, anchorX, y)
+    return
+  }
+
+  // ctx.textAlign can't align a sequence of differently-fonted runs, so we
+  // resolve the anchor ourselves and lay the runs out left-to-right.
+  const prevAlign = ctx.textAlign
+  const emojiFont = emojiFontShorthand(style)
+  const startX = alignStartX(style, anchorX, layout.total)
+  ctx.textAlign = "left"
+  for (let i = 0; i < layout.runs.length; i++) {
+    ctx.font = layout.runs[i].emoji ? emojiFont : mainFont
+    ctx.fillText(layout.runs[i].text, startX + layout.offsets[i], y)
+  }
+  ctx.font = mainFont
+  ctx.textAlign = prevAlign
+}
+
 export function measureText(
   ctx: CanvasRenderingContext2D,
   text: string,
   style: TextStyle,
 ): LineMetrics {
   ctx.font = cssFontShorthand(style)
-  const prevAlign = ctx.textAlign
-  ctx.textAlign = "start"
   const lines = text.length === 0 ? [""] : text.split("\n")
   let maxWidth = 0
   let maxInk = 0
   for (const line of lines) {
-    const m = ctx.measureText(line)
+    const m = measureStyledLine(ctx, line, style)
     if (m.width > maxWidth) maxWidth = m.width
     // Italics, wide left-bearings (e.g. Dela Gothic) and decorative fonts can
     // paint glyphs outside the advance box. actualBoundingBox{Left,Right} are
     // measured from the alignment point (start = origin), so their sum is the
     // total ink extent regardless of advance.
-    const ink =
-      (m.actualBoundingBoxLeft ?? 0) + (m.actualBoundingBoxRight ?? m.width)
+    const ink = m.inkLeft + m.inkRight
     if (ink > maxInk) maxInk = ink
   }
-  ctx.textAlign = prevAlign
   const lineHeightPx = stylePx(style) * styleLineHeight(style)
   const height = lines.length * lineHeightPx
   return {
@@ -78,9 +238,14 @@ export function measureTextWrapped(
       continue
     }
     let current = ""
-    for (const ch of seg) {
+    // Grapheme-wise, not code-point-wise: breaking inside a ZWJ family, a flag,
+    // a keycap or a bopomofo IVS pair would render two broken halves.
+    for (const ch of segmentGraphemes(seg)) {
       const candidate = current + ch
-      if (ctx.measureText(candidate).width <= maxWidth || current === "") {
+      if (
+        measureStyledLine(ctx, candidate, style).width <= maxWidth ||
+        current === ""
+      ) {
         current = candidate
       } else {
         lines.push(current)
@@ -92,10 +257,9 @@ export function measureTextWrapped(
   let widest = 0
   let widestInk = 0
   for (const line of lines) {
-    const m = ctx.measureText(line)
+    const m = measureStyledLine(ctx, line, style)
     if (m.width > widest) widest = m.width
-    const ink =
-      (m.actualBoundingBoxLeft ?? 0) + (m.actualBoundingBoxRight ?? m.width)
+    const ink = m.inkLeft + m.inkRight
     if (ink > widestInk) widestInk = ink
   }
   const lineHeightPx = stylePx(style) * styleLineHeight(style)
@@ -141,7 +305,8 @@ export function layoutCurvedText(
   style: TextStyle,
   curveT: number,
 ): CurvedLayout {
-  measureCtx.font = cssFontShorthand(style)
+  const mainFont = cssFontShorthand(style)
+  measureCtx.font = mainFont
   const prevAlign = measureCtx.textAlign
   const prevBaseline = measureCtx.textBaseline
   measureCtx.textAlign = "center"
@@ -149,9 +314,26 @@ export function layoutCurvedText(
 
   // Treat the whole string as one ring; newlines become spaces.
   const flat = text.replace(/\n+/g, " ")
-  const chars = [...flat]
+  // Grapheme clusters, not code points — otherwise a ZWJ emoji or a bopomofo
+  // IVS sequence gets torn into separate glyphs spread around the arc.
+  const chars = segmentGraphemes(flat)
   const safeChars = chars.length > 0 ? chars : [" "]
-  const widths = safeChars.map((c) => Math.max(measureCtx.measureText(c).width, 1))
+  // "system" keeps every glyph on the main font, so we never even classify.
+  const emojiFont =
+    style.emojiFamily === "system" ? null : emojiFontShorthand(style)
+  const fonts = safeChars.map((c) =>
+    emojiFont && isEmojiGrapheme(c) ? emojiFont : mainFont,
+  )
+  // Only touch ctx.font when the run actually changes; single-font text keeps
+  // the original one-assignment behaviour.
+  let measuringFont = mainFont
+  const widths = safeChars.map((c, i) => {
+    if (fonts[i] !== measuringFont) {
+      measureCtx.font = fonts[i]
+      measuringFont = fonts[i]
+    }
+    return Math.max(measureCtx.measureText(c).width, 1)
+  })
   const totalAdvance = widths.reduce((a, b) => a + b, 0)
 
   // Split sign + magnitude so the geometry stays one branch and we flip at
@@ -175,12 +357,17 @@ export function layoutCurvedText(
 
   // Per-char angular positions, centered so the arc midpoint sits at the
   // smile/frown apex.
-  const positions: { ch: string; angle: number; width: number }[] = []
+  const positions: {
+    ch: string
+    angle: number
+    width: number
+    font: string
+  }[] = []
   let cursor = 0
   for (let i = 0; i < safeChars.length; i++) {
     const center = cursor + widths[i] / 2
     const angle = center / radius - arcAngle / 2
-    positions.push({ ch: safeChars[i], angle, width: widths[i] })
+    positions.push({ ch: safeChars[i], angle, width: widths[i], font: fonts[i] })
     cursor += widths[i]
   }
 
@@ -221,10 +408,15 @@ export function layoutCurvedText(
     originX: number,
     originY: number,
   ) => {
-    ctx.font = cssFontShorthand(style)
+    ctx.font = mainFont
     ctx.textBaseline = "middle"
     ctx.textAlign = "center"
-    for (const { ch, angle } of positions) {
+    let drawingFont = mainFont
+    for (const { ch, angle, font } of positions) {
+      if (font !== drawingFont) {
+        ctx.font = font
+        drawingFont = font
+      }
       ctx.save()
       ctx.translate(originX + centerX, originY + centerY)
       // For frown we rotate the opposite way and walk *down* by the radius;
@@ -244,6 +436,22 @@ export function cssFontShorthand(style: TextStyle): string {
   const family = getFamily(style.family)
   const key = resolveVariant(family, style.bold, style.italic)
   return `${stylePx(style)}px "${fontCssFamily(style.family, key)}"`
+}
+
+/**
+ * Font shorthand for emoji runs: the chosen emoji family FIRST so it wins over
+ * any monochrome emoji glyphs the main font happens to ship, with the main font
+ * kept as fallback for anything the emoji font can't cover.
+ *
+ * With emojiFamily === "system" there is no emoji font, so this degrades to the
+ * main shorthand — callers on the fast path never reach here anyway.
+ */
+export function emojiFontShorthand(style: TextStyle): string {
+  if (style.emojiFamily === "system") return cssFontShorthand(style)
+  const family = getFamily(style.family)
+  const key = resolveVariant(family, style.bold, style.italic)
+  const main = fontCssFamily(style.family, key)
+  return `${stylePx(style)}px "${emojiCssFamily(style.emojiFamily)}", "${main}"`
 }
 
 export function resolveColors(style: TextStyle): { fg: string; bg: string | null } {
@@ -285,10 +493,9 @@ export function drawLayer(
     ctx.fill()
   }
 
-  ctx.font = cssFontShorthand(style)
+  // font + textAlign are owned by drawStyledLine (they vary per emoji run).
   ctx.fillStyle = fg
   ctx.textBaseline = "middle"
-  ctx.textAlign = style.align
 
   const totalHeight = metrics.height
   let cursorY = -totalHeight / 2 + metrics.lineHeightPx / 2
@@ -300,7 +507,7 @@ export function drawLayer(
         : 0
 
   for (const line of metrics.lines) {
-    ctx.fillText(line, anchorX, cursorY)
+    drawStyledLine(ctx, line, style, anchorX, cursorY)
     cursorY += metrics.lineHeightPx
   }
 

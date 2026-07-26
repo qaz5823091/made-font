@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import {
   AlignCenter,
   AlignLeft,
@@ -23,9 +30,11 @@ import {
   resolveVariant,
 } from "@/lib/fonts"
 import { useCustomFonts, importCustomFont } from "@/lib/customFonts"
+import { ensureEmojiFontLoaded, textHasEmoji } from "@/lib/emojiFonts"
 import {
   canvasPadding,
   cssFontShorthand,
+  drawStyledLine,
   layoutCurvedText,
   measureText,
   resolveColors,
@@ -52,6 +61,7 @@ import {
 import { useI18n } from "@/lib/i18n"
 import { useFlashToast } from "@/lib/useFlashToast"
 import { buildExportConfig, track } from "@/lib/analytics"
+import { EmojiFontPicker } from "./EmojiFontPicker"
 
 const BASE_PADDING = 24
 const SWATCHES = [
@@ -127,10 +137,21 @@ export function MobileEditor({
     return () => ro.disconnect()
   }, [])
 
+  // Only pay for the emoji webfont download when the text actually has emoji.
+  const hasEmoji = useMemo(() => textHasEmoji(text), [text])
+
   useEffect(() => {
     let cancelled = false
     setFontReady(false)
-    ensureFontLoaded(style.family, style.bold, style.italic)
+    const jobs: Promise<unknown>[] = [
+      ensureFontLoaded(style.family, style.bold, style.italic),
+    ]
+    if (style.emojiFamily !== "system" && hasEmoji) {
+      jobs.push(ensureEmojiFontLoaded(style.emojiFamily))
+    }
+    // A failed download must never brick the editor — we still mark ready and
+    // let the browser fall back to whatever it can render.
+    Promise.all(jobs)
       .then(() => {
         if (!cancelled) setFontReady(true)
       })
@@ -140,7 +161,7 @@ export function MobileEditor({
     return () => {
       cancelled = true
     }
-  }, [style.family, style.bold, style.italic])
+  }, [style.family, style.bold, style.italic, style.emojiFamily, hasEmoji])
 
   // Whenever style.size changes (e.g. user picks a different base), reset the
   // display size; auto-fit may shrink it back down below.
@@ -217,11 +238,10 @@ export function MobileEditor({
       ctx.fillStyle = bg
       ctx.fillRect(0, 0, cssWidth, cssHeight)
     }
-    ctx.font = cssFontShorthand(effective)
+    // font + textAlign are owned by drawStyledLine (they vary per emoji run).
     ctx.fillStyle = fg
     ctx.globalAlpha = isEmpty ? 0.35 : 1
     ctx.textBaseline = "middle"
-    ctx.textAlign = effective.align
     const anchorX =
       effective.align === "left"
         ? pad
@@ -230,7 +250,7 @@ export function MobileEditor({
           : cssWidth / 2
     let cursorY = pad + metrics.lineHeightPx / 2
     for (const line of metrics.lines) {
-      ctx.fillText(line, anchorX, cursorY)
+      drawStyledLine(ctx, line, effective, anchorX, cursorY)
       cursorY += metrics.lineHeightPx
     }
     ctx.globalAlpha = 1
@@ -327,7 +347,8 @@ export function MobileEditor({
     const placeholder = t("panel.text.placeholder")
     const drawText = text.length === 0 ? placeholder : text
     for (let i = 0; i < 24; i++) {
-      probe.font = cssFontShorthand({ ...style, size })
+      // measureText sets the probe font itself and is emoji-run aware, so the
+      // fitted size accounts for emoji glyph widths exactly as draw() will.
       const metrics = measureText(probe, drawText, { ...style, size })
       if (metrics.inkWidth <= target) break
       const ratio = target / metrics.inkWidth
@@ -832,7 +853,12 @@ export function MobileEditor({
               </button>
             ))}
           </div>
-          <div className="mt-1 border-t border-border pt-1">
+          {/* Pinned action row: import on the left, emoji font on the right —
+              the same pairing as the desktop panel, where the emoji picker sits
+              at the right end of the family row. Its own panel opens upward:
+              this sheet is anchored to the bottom of the screen, so a downward
+              panel would land behind the toolbar. */}
+          <div className="mt-1 flex items-center gap-1 border-t border-border pt-1">
             <button
               type="button"
               onClick={async () => {
@@ -851,10 +877,16 @@ export function MobileEditor({
                   )
                 }
               }}
-              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-primary transition hover:bg-muted"
+              className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-primary transition hover:bg-muted"
             >
               + {t("font.import")}
             </button>
+            {/* The picker fires change_emoji_font itself — no track() here. */}
+            <EmojiFontPicker
+              value={style.emojiFamily}
+              onChange={(id) => set("emojiFamily", id)}
+              placement="up"
+            />
           </div>
         </div>
       )}

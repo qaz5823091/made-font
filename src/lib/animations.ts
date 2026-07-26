@@ -1,4 +1,13 @@
-import { canvasPadding, cssFontShorthand, layoutCurvedText, measureText, resolveColors } from "./canvas"
+import {
+  canvasPadding,
+  cssFontShorthand,
+  drawStyledLine,
+  layoutCurvedText,
+  measureStyledLine,
+  measureText,
+  resolveColors,
+} from "./canvas"
+import { segmentGraphemes } from "./emojiFonts"
 import { stylePx, styleLineHeight, type TextStyle } from "./types"
 
 export const ANIMATION_KINDS = ["pulse", "marquee", "bounce", "rotate", "fade", "wave"] as const
@@ -150,6 +159,11 @@ export function drawAnimationFrame(
   ctx.fillStyle = fg
   ctx.textBaseline = "middle"
   ctx.textAlign = "center"
+  // Animation frames always center the text around the canvas origin, ignoring
+  // style.align. drawStyledLine derives its anchor from style.align, so hand it
+  // a centered variant instead of mutating ctx.textAlign behind its back.
+  const centered: TextStyle =
+    style.align === "center" ? style : { ...style, align: "center" }
 
   if (style.curve !== 0) {
     // Reuse the curved-text layout so the slider keeps working in animation
@@ -162,21 +176,25 @@ export function drawAnimationFrame(
     // the wave actually propagates across the text rather than translating
     // the whole block.
     const flat = (text || " ").replace(/\n+/g, " ")
-    const chars = [...flat]
-    const widths = chars.map((c) => Math.max(ctx.measureText(c).width, 1))
+    // Grapheme clusters so a ZWJ emoji wobbles as one glyph instead of coming
+    // apart into its component code points.
+    const chars = segmentGraphemes(flat)
+    const widths = chars.map((c) =>
+      Math.max(measureStyledLine(ctx, c, centered).width, 1),
+    )
     const totalW = widths.reduce((a, b) => a + b, 0)
     let cursor = -totalW / 2
     const amp = fontPx * 0.15
     for (let i = 0; i < chars.length; i++) {
       const phase = t * Math.PI * 2 - (i / Math.max(1, chars.length - 1)) * Math.PI * 2
       const dy = Math.sin(phase) * amp
-      ctx.fillText(chars[i], cursor + widths[i] / 2, dy)
+      drawStyledLine(ctx, chars[i], centered, cursor + widths[i] / 2, dy)
       cursor += widths[i]
     }
   } else {
     let cursorY = -metrics.height / 2 + metrics.lineHeightPx / 2
     for (const line of metrics.lines) {
-      ctx.fillText(line, 0, cursorY)
+      drawStyledLine(ctx, line, centered, 0, cursorY)
       cursorY += metrics.lineHeightPx
     }
   }

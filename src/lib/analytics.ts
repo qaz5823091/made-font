@@ -21,6 +21,8 @@ export type ExportConfig = {
   color: string
   /** -1..1 — bi-directional curve. 0 = straight. */
   curve: number
+  /** "system" | "apple" | "twemoji" | "noto" — which emoji font was in use. */
+  emoji_family: string
 }
 
 /** Adds animation parameters to the base export config. */
@@ -44,6 +46,7 @@ export function buildExportConfig(
     bg_mode: style.bgMode,
     color: style.color,
     curve: style.curve,
+    emoji_family: style.emojiFamily,
   }
 }
 
@@ -73,6 +76,7 @@ function flattenExportConfig(c: ExportConfig) {
     color: c.color,
     // Round to 0.05 buckets so GA's dimension cardinality stays manageable.
     curve: (Math.round(c.curve * 20) / 20).toFixed(2),
+    emoji_family: c.emoji_family,
   }
 }
 
@@ -129,6 +133,11 @@ export const track = {
   // passed through directly and appear as new dimension values in GA.
   changeFont: (fontId: string) => log("change_font", { font_id: fontId }),
 
+  // Fixed 4-value dimension ("system" | "apple" | "twemoji" | "noto"), so it
+  // doubles as the adoption signal for the downloadable emoji fonts — the
+  // export events only report whatever was selected at export time.
+  changeEmojiFont: (id: string) => log("change_emoji_font", { emoji_family: id }),
+
   // Fired once when a user successfully imports a custom font. Only the file
   // extension is sent — it's low cardinality, and the font_id is a raw user
   // filename we deliberately keep out of GA.
@@ -182,4 +191,25 @@ export const track = {
   // happens out-of-process — so this just records that the fallback fired.
   shareGif: (config: GifExportConfig) =>
     log("share_gif", flattenGifExportConfig(config)),
+
+  // ---- Web Share Target funnel ----
+
+  // Fired once when the share landing mounts. mode: "ask" (both choices shown)
+  // | "quick" (remembered or deep-linked quick mode, copy attempted on load).
+  // The "custom" branch never renders a landing, so it has no event here — it
+  // shows up as share_custom's absence plus a normal editor session.
+  shareLanding: (mode: "ask" | "quick") => log("share_landing", { mode }),
+
+  // Same style snapshot as copy_image so the share funnel can be compared
+  // against in-editor exports. auto=true means it fired without a tap.
+  shareQuickCopy: (config: ExportConfig, auto: boolean) =>
+    log("share_quick_copy", { ...flattenExportConfig(config), auto: String(auto) }),
+
+  // The landing's "adjust it myself" exit into the editor.
+  shareCustom: () => log("share_custom"),
+
+  // mode: "quick" | "custom" when the user ticks "remember my choice";
+  // "cleared" when they undo it (landing link or the help modal's reset).
+  shareRemember: (mode: "quick" | "custom" | "cleared") =>
+    log("share_remember", { mode }),
 }
