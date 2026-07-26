@@ -9,16 +9,9 @@ import {
 
 const STORAGE_KEY = "made-font.prefs"
 
-export type SharePrefMode = "quick" | "custom"
-
 export type Prefs = {
   v: 1
   style: TextStyle
-  /**
-   * Remembered answer to the share-landing prompt. Undefined = ask every time
-   * ("quick" auto-copies, "custom" skips the landing and opens the editor).
-   */
-  shareMode?: SharePrefMode
 }
 
 const BG_MODES: BgMode[] = ["transparent", "complement-bg", "complement-text"]
@@ -79,13 +72,9 @@ export function loadPrefs(): Prefs | null {
     if (!parsed || typeof parsed !== "object") return null
     const obj = parsed as Record<string, unknown>
     if (obj.v !== 1) return null
-    const shareMode = obj.shareMode
-    return {
-      v: 1,
-      style: sanitizeStyle(obj.style),
-      shareMode:
-        shareMode === "quick" || shareMode === "custom" ? shareMode : undefined,
-    }
+    // Unknown keys (e.g. the retired `shareMode`) are simply dropped — only
+    // `style` is read, so stale records from older versions still load.
+    return { v: 1, style: sanitizeStyle(obj.style) }
   } catch {
     return null
   }
@@ -93,24 +82,7 @@ export function loadPrefs(): Prefs | null {
 
 export function saveStylePref(style: TextStyle): void {
   if (typeof window === "undefined") return
-  const prefs: Prefs = { v: 1, style, shareMode: loadPrefs()?.shareMode }
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs))
-  } catch {}
-}
-
-/**
- * Remembers (or forgets, with `null`) the share-landing choice. The stored
- * style is carried over untouched — the share landing never edits the style,
- * so it must not clobber what the editor last saved.
- */
-export function saveShareModePref(mode: SharePrefMode | null): void {
-  if (typeof window === "undefined") return
-  const prefs: Prefs = {
-    v: 1,
-    style: loadPrefs()?.style ?? DEFAULT_STYLE,
-    shareMode: mode ?? undefined,
-  }
+  const prefs: Prefs = { v: 1, style }
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs))
   } catch {}

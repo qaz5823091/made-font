@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Check, Copy, Loader2, SlidersHorizontal } from "lucide-react"
+import { Copy, Loader2, SlidersHorizontal } from "lucide-react"
 import { ensureFontLoaded } from "@/lib/fonts"
 import { ensureEmojiFontLoaded, textHasEmoji } from "@/lib/emojiFonts"
 import { renderTextToCanvas } from "@/lib/renderText"
 import { canvasToPngBlob, copyBlobToClipboard } from "@/lib/export"
-import { saveShareModePref } from "@/lib/prefs"
 import { useI18n } from "@/lib/i18n"
 import { useMediaQuery } from "@/lib/useMediaQuery"
 import { useFlashToast } from "@/lib/useFlashToast"
@@ -16,41 +15,34 @@ type Props = {
   text: string
   /** The user's last-used style — the whole point of "quick". */
   style: TextStyle
-  /** Try the clipboard write as soon as the first render lands. */
+  /**
+   * Try the clipboard write as soon as the first render lands. Set only by an
+   * explicit `?mode=quick` deep link (the iOS Shortcut power path) — a plain
+   * share always waits for a tap.
+   */
   autoCopy: boolean
-  /** Offer the "remember my choice" checkbox (only when nothing is stored). */
-  showRemember: boolean
-  /** Quick mode came from storage, so offer a way back out of it. */
-  rememberedQuick: boolean
   /** Hand the text to the editor and dismiss the landing. */
   onCustom: () => void
 }
+
+/** Long enough for the "copied" toast to register before the window goes away. */
+const CLOSE_DELAY_MS = 1200
 
 /**
  * The share-target landing: a focused sheet showing what the shared text looks
  * like in the user's last style, with one tap to copy it as a PNG and one tap
  * to open the full editor instead.
  */
-export function ShareLanding({
-  text,
-  style,
-  autoCopy,
-  showRemember,
-  rememberedQuick,
-  onCustom,
-}: Props) {
+export function ShareLanding({ text, style, autoCopy, onCustom }: Props) {
   const { t } = useI18n()
   const { toast, flash } = useFlashToast()
   const isDesktop = useMediaQuery("(min-width: 768px)")
   const [fontReady, setFontReady] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const [remember, setRemember] = useState(false)
-  // Local-only: flipped when the user cancels a remembered quick mode, which
-  // swaps the "remembered" line back for the checkbox.
-  const [cleared, setCleared] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const autoCopyTried = useRef(false)
   const shownLogged = useRef(false)
+  const closeTimer = useRef<number | null>(null)
+  const closeBlocked = useRef(false)
 
   const hasEmoji = useMemo(() => textHasEmoji(text), [text])
 
@@ -86,6 +78,43 @@ export function ShareLanding({
   const source = isDesktop ? "desktop" : "mobile"
 
   /**
+   * Drops a pending auto-close and blocks any later one — a copy still in
+   * flight when the user leaves must not close the window out from under the
+   * editor it just opened.
+   */
+  const cancelClose = useCallback(() => {
+    closeBlocked.current = true
+    if (closeTimer.current === null) return
+    window.clearTimeout(closeTimer.current)
+    closeTimer.current = null
+  }, [])
+
+  /**
+   * Progressive enhancement: a window opened by the share target has a session
+   * history length of 1, which the HTML spec lets script close — so on Android
+   * this drops the user straight back into the app they shared from, right
+   * after the toast. Anywhere the browser refuses (a normal tab with real
+   * history, most desktop cases) the call is simply a no-op and the landing
+   * stays exactly as it is. The ref keeps repeated copies from stacking timers.
+   */
+  const scheduleClose = useCallback(() => {
+    if (closeBlocked.current || closeTimer.current !== null) return
+    closeTimer.current = window.setTimeout(() => {
+      closeTimer.current = null
+      try {
+        window.close()
+      } catch {}
+    }, CLOSE_DELAY_MS)
+  }, [])
+
+  // Re-arm on mount: StrictMode runs the cleanup once before the real mount,
+  // and the ref survives that, so the block must only stick for a true unmount.
+  useEffect(() => {
+    closeBlocked.current = false
+    return cancelClose
+  }, [cancelClose])
+
+  /**
    * Copies the preview canvas. The blob promise is built synchronously so the
    * user-gesture context survives (Safari rejects clipboard writes once an
    * await has broken the gesture chain) — see PureEditor.handleCopy.
@@ -98,11 +127,14 @@ export function ShareLanding({
         return canvasToPngBlob(canvas)
       })()
       return copyBlobToClipboard(blobPromise).then(() => {
-        setCopied(true)
         track.shareQuickCopy(buildExportConfig(source, style), auto)
+        // Single piece of feedback for both paths — nothing on the button or
+        // the sheet changes, so a second tap looks and behaves identically.
+        flash(t("share.copiedToast"))
+        scheduleClose()
       })
     },
-    [source, style, t],
+    [source, style, t, flash, scheduleClose],
   )
 
   useEffect(() => {
@@ -122,58 +154,45 @@ export function ShareLanding({
   }, [fontReady, text, style, autoCopy, attemptCopy])
 
   const handleQuick = () => {
-    if (remember) {
-      saveShareModePref("quick")
-      track.shareRemember("quick")
-    }
-    attemptCopy(false)
-      .then(() => flash(t("toast.copied")))
-      .catch((err) =>
-        flash(err instanceof Error ? err.message : t("toast.copyFailed")),
-      )
+    attemptCopy(false).catch((err) =>
+      flash(err instanceof Error ? err.message : t("toast.copyFailed")),
+    )
   }
 
   const handleCustom = () => {
-    if (remember) {
-      saveShareModePref("custom")
-      track.shareRemember("custom")
-    }
+    // They want to keep working — never yank the editor away mid-tweak.
+    cancelClose()
     track.shareCustom()
     onCustom()
   }
 
-  const handleClearRemember = () => {
-    saveShareModePref(null)
-    track.shareRemember("cleared")
-    setCleared(true)
-    flash(t("share.rememberCleared"))
-  }
-
-  const askRemember = showRemember || cleared
-
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center justify-center gap-2 border-b bg-card px-3 py-2">
+      {/*
+        The landing is a single-purpose sheet, so the brand row doubles as its
+        heading: a bigger icon (the source PNG carries its own square lavender
+        background, which needs a matching radius to not look clipped) beside a
+        stacked title + what-this-screen-is subtitle, centered as one group.
+      */}
+      <header className="flex items-center justify-center gap-3 border-b bg-card px-4 py-3">
         <img
           src={`${import.meta.env.BASE_URL}icon.png`}
           alt=""
-          className="h-6 w-6 rounded-md"
+          className="h-11 w-11 shrink-0 rounded-xl shadow-sm ring-1 ring-black/5"
         />
-        <span className="text-sm font-semibold leading-none">
-          {t("app.title")}
-        </span>
+        <div className="min-w-0">
+          <div className="text-lg font-bold leading-tight tracking-tight">
+            {t("app.title")}
+          </div>
+          <div className="mt-0.5 text-xs leading-tight text-muted-foreground">
+            {t("share.title")}
+          </div>
+        </div>
       </header>
 
       <div className="flex-1 min-h-0 overflow-auto">
         <div className="mx-auto flex w-full max-w-md flex-col gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <div>
-            <h1 className="text-base font-semibold tracking-tight">
-              {t("share.title")}
-            </h1>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {t("share.subtitle")}
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground">{t("share.subtitle")}</p>
 
           <div className="relative rounded-xl border bg-muted/30 p-3">
             {!fontReady && (
@@ -192,18 +211,6 @@ export function ShareLanding({
             </div>
           </div>
 
-          {copied ? (
-            <div className="rounded-lg bg-primary/10 px-3 py-2 text-center">
-              <div className="inline-flex items-center justify-center gap-2 text-sm font-medium text-primary">
-                <Check className="h-4 w-4" />
-                {t("share.copied")}
-              </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {t("share.copiedHint")}
-              </p>
-            </div>
-          ) : null}
-
           <div className="flex flex-col gap-2">
             <button
               type="button"
@@ -211,7 +218,7 @@ export function ShareLanding({
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground shadow-sm active:scale-[0.98]"
             >
               <Copy className="h-4 w-4" />
-              {copied ? t("share.quickAgain") : t("share.quick")}
+              {t("share.quick")}
             </button>
             <button
               type="button"
@@ -222,26 +229,6 @@ export function ShareLanding({
               {t("share.custom")}
             </button>
           </div>
-
-          {askRemember ? (
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-input accent-primary"
-              />
-              {t("share.remember")}
-            </label>
-          ) : rememberedQuick ? (
-            <button
-              type="button"
-              onClick={handleClearRemember}
-              className="self-start text-xs text-muted-foreground underline decoration-muted-foreground/40 underline-offset-2 hover:text-foreground"
-            >
-              {t("share.rememberedQuick")}
-            </button>
-          ) : null}
         </div>
       </div>
 

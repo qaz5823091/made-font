@@ -195,7 +195,7 @@ export const track = {
   // ---- Web Share Target funnel ----
 
   // Fired once when the share landing mounts. mode: "ask" (both choices shown)
-  // | "quick" (remembered or deep-linked quick mode, copy attempted on load).
+  // | "quick" (an explicit ?mode=quick deep link, copy attempted on load).
   // The "custom" branch never renders a landing, so it has no event here — it
   // shows up as share_custom's absence plus a normal editor session.
   shareLanding: (mode: "ask" | "quick") => log("share_landing", { mode }),
@@ -207,9 +207,4 @@ export const track = {
 
   // The landing's "adjust it myself" exit into the editor.
   shareCustom: () => log("share_custom"),
-
-  // mode: "quick" | "custom" when the user ticks "remember my choice";
-  // "cleared" when they undo it (landing link or the help modal's reset).
-  shareRemember: (mode: "quick" | "custom" | "cleared") =>
-    log("share_remember", { mode }),
 }

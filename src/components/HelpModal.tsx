@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import { ExternalLink, HelpCircle, RotateCcw, ScrollText, X } from "lucide-react";
+import { ExternalLink, HelpCircle, ScrollText, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { saveShareModePref } from "@/lib/prefs";
-import { track } from "@/lib/analytics";
 
 type Tab = "usage" | "terms";
 
@@ -224,14 +222,11 @@ function UsagePage() {
 const SHORTCUT_STEPS = ["s1", "s2", "s3", "s4", "s5"] as const;
 
 /**
- * Share-target help. It carries the platform caveats (the feature needs an
- * installed PWA, and iOS has no web share targets at all) plus the escape
- * hatch for users who remembered "custom" — they never see the landing again,
- * so this is the only place left to undo it.
+ * Share-target help, mostly platform caveats: the feature needs an installed
+ * PWA, and iOS has no web share targets at all.
  */
 function ShareBlock() {
   const { t } = useI18n();
-  const [reset, setReset] = useState(false);
 
   return (
     <div>
@@ -270,31 +265,6 @@ function ShareBlock() {
           <p className="mt-2 text-xs text-muted-foreground">
             {t("help.usage.share.ios.alt")}
           </p>
-        </div>
-
-        <div className="border-t pt-3">
-          <p className="text-xs text-muted-foreground">
-            {t("help.usage.share.reset.body")}
-          </p>
-          <div className="mt-2 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                saveShareModePref(null);
-                track.shareRemember("cleared");
-                setReset(true);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-2.5 py-1.5 text-xs font-medium shadow-sm active:scale-[0.98]"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              {t("help.usage.share.reset.button")}
-            </button>
-            {reset && (
-              <span className="text-xs font-medium text-primary">
-                {t("help.usage.share.reset.done")}
-              </span>
-            )}
-          </div>
         </div>
       </div>
     </div>

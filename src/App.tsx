@@ -24,7 +24,7 @@ import {
 import { track } from "@/lib/analytics"
 import { initCustomFonts } from "@/lib/customFonts"
 import { CUSTOM_FONTS, FONT_FAMILY_IDS } from "@/lib/fonts"
-import { loadPrefs, saveStylePref, type SharePrefMode } from "@/lib/prefs"
+import { loadPrefs, saveStylePref } from "@/lib/prefs"
 import { useFlashToast } from "@/lib/useFlashToast"
 
 type Mode = "pure" | "image"
@@ -50,12 +50,16 @@ function initialPrefs(): { style: TextStyle; pendingFamily: string | null } {
 
 const INITIAL_PREFS = initialPrefs()
 
+type ShareMode = "quick" | "custom"
+
 type ShareLaunch = {
   text: string
-  /** Resolved mode: URL override wins, then the remembered preference. */
-  mode: SharePrefMode | null
-  /** True when `mode` came from storage rather than the URL. */
-  remembered: boolean
+  /**
+   * From the URL only: "quick" auto-copies on the landing, "custom" skips
+   * straight to the editor. Absent (the normal share-sheet case) shows the
+   * landing and waits for a tap.
+   */
+  mode: ShareMode | null
 }
 
 /**
@@ -72,14 +76,7 @@ function initialShare(): ShareLaunch | null {
     .find((value) => value !== "")
   if (!text) return null
   const raw = params.get("mode")
-  const override: SharePrefMode | null =
-    raw === "quick" || raw === "custom" ? raw : null
-  const stored = loadPrefs()?.shareMode ?? null
-  return {
-    text,
-    mode: override ?? stored,
-    remembered: !override && stored !== null,
-  }
+  return { text, mode: raw === "quick" || raw === "custom" ? raw : null }
 }
 
 const SHARE = initialShare()
@@ -181,8 +178,6 @@ function Shell() {
           text={SHARE.text}
           style={pureStyle}
           autoCopy={SHARE.mode === "quick"}
-          showRemember={SHARE.mode === null}
-          rememberedQuick={SHARE.mode === "quick" && SHARE.remembered}
           onCustom={() => {
             setPureText(SHARE.text)
             setLandingOpen(false)

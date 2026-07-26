@@ -97,13 +97,8 @@ const ZH: Messages = {
   "share.title": "快速製作",
   "share.subtitle": "收到分享的文字，已套用你上次的樣式。",
   "share.quick": "快速複製",
-  "share.quickAgain": "再複製一次",
   "share.custom": "自訂調整",
-  "share.copied": "已複製",
-  "share.copiedHint": "回到原本的 App 貼上即可",
-  "share.remember": "記住我的選擇，下次不再詢問",
-  "share.rememberedQuick": "已記住快速模式 · 取消",
-  "share.rememberCleared": "已取消，下次會再問一次",
+  "share.copiedToast": "已複製，回到原本的 App 貼上吧",
 
   "help.button": "說明與條款",
   "help.close": "關閉",
@@ -119,7 +114,7 @@ const ZH: Messages = {
     "之後會開放：放一張圖、把文字疊在上面，可以一直疊。複製跟下載的方式跟純文字模式一樣。",
   "help.usage.share.title": "快速製作（分享）",
   "help.usage.share.body":
-    "在其他 App 選取文字 → 分享 → MadeFont，選「快速複製」直接用上次的樣式出圖進剪貼簿，或「自訂調整」進編輯器。",
+    "在其他 App 選取文字 → 分享 → MadeFont，選「快速複製」直接用上次的樣式出圖進剪貼簿，接著會自動關閉、回到原本的 App 貼上（有些瀏覽器不允許自動關閉，手動切回去就好）；或選「自訂調整」進編輯器。",
   "help.usage.share.android.title": "Android／桌面版 Chrome、Edge",
   "help.usage.share.android.body":
     "必須先安裝（網址列的「安裝」或選單中的「加到主畫面」）後，MadeFont 才會出現在系統分享選單。",
@@ -135,10 +130,6 @@ const ZH: Messages = {
     "URL 填 https://madefont.cppdesigns.cc/?text= ，後面接「捷徑輸入」變數。",
   "help.usage.share.ios.shortcut.s5": "把捷徑命名為 MadeFont。",
   "help.usage.share.ios.alt": "替代做法二：複製文字後直接開啟 MadeFont 貼上。",
-  "help.usage.share.reset.body":
-    "如果你之前勾了「記住我的選擇」而選了「自訂調整」，分享時就不會再出現那個畫面。按這裡改回每次詢問。",
-  "help.usage.share.reset.button": "重設分享模式偏好",
-  "help.usage.share.reset.done": "已重設",
 
   "help.usage.animation.title": "動畫模式",
   "help.usage.animation.body":
@@ -291,13 +282,8 @@ const EN: Messages = {
   "share.title": "Quick make",
   "share.subtitle": "Got your shared text — styled with what you used last.",
   "share.quick": "Quick copy",
-  "share.quickAgain": "Copy again",
   "share.custom": "Adjust it myself",
-  "share.copied": "Copied",
-  "share.copiedHint": "Go back to the other app and paste",
-  "share.remember": "Remember my choice, don't ask again",
-  "share.rememberedQuick": "Quick mode remembered · undo",
-  "share.rememberCleared": "Undone — you'll be asked again next time",
+  "share.copiedToast": "Copied — switch back and paste",
 
   "help.button": "Help & Licenses",
   "help.close": "Close",
@@ -313,7 +299,7 @@ const EN: Messages = {
     "Coming soon — drop in an image and stack text on top. Copy and Download work the same as text-only mode.",
   "help.usage.share.title": "Quick make (share)",
   "help.usage.share.body":
-    "In any other app, select text → Share → MadeFont. Pick “Quick copy” to render it with your last style straight onto the clipboard, or “Adjust it myself” to open the editor.",
+    "In any other app, select text → Share → MadeFont. Pick “Quick copy” to render it with your last style straight onto the clipboard — the window then closes itself so you land back where you shared from, ready to paste (some browsers won't allow that; just switch back yourself). Or pick “Adjust it myself” to open the editor.",
   "help.usage.share.android.title": "Android / desktop Chrome, Edge",
   "help.usage.share.android.body":
     "You have to install the app first (the Install button in the address bar, or “Add to Home screen” in the menu) before MadeFont shows up in the system share sheet.",
@@ -331,10 +317,6 @@ const EN: Messages = {
   "help.usage.share.ios.shortcut.s5": "Name the shortcut MadeFont.",
   "help.usage.share.ios.alt":
     "Option 2: copy the text, open MadeFont, and paste it in.",
-  "help.usage.share.reset.body":
-    "If you ticked “Remember my choice” on “Adjust it myself”, sharing skips that screen from then on. This puts it back to asking every time.",
-  "help.usage.share.reset.button": "Reset share mode preference",
-  "help.usage.share.reset.done": "Reset",
 
   "help.usage.animation.title": "Animation mode",
   "help.usage.animation.body":
