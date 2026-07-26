@@ -11,6 +11,7 @@ type FontEntry = {
     | "GenYoMin2TW"
     | "IBMPlexSans"
     | "DelaGothicOne"
+    | "Jersey10"
     | "ChenYuluoyanThin"
     | "BpmfZihiKaiStd";
   repo: string;
@@ -38,6 +39,13 @@ const FONTS: FontEntry[] = [
     key: "DelaGothicOne",
     repo: "https://fonts.google.com/specimen/Dela+Gothic+One",
     license: "https://fonts.google.com/specimen/Dela+Gothic+One/license",
+  },
+  {
+    key: "Jersey10",
+    repo: "https://github.com/scfried/soft-type-jersey",
+    // Bundled next to the font file, same as BpmfZihiKaiStd: the OFL text
+    // shipped in the release is the authoritative copy.
+    license: `${import.meta.env.BASE_URL}fonts/Jersey10/OFL.txt`,
   },
   {
     key: "ChenYuluoyanThin",

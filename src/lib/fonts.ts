@@ -45,6 +45,14 @@ export const FONT_FAMILIES: FontFamily[] = [
     },
   },
   {
+    id: "Jersey10",
+    format: "truetype",
+    ext: "ttf",
+    variants: {
+      regular: "Regular",
+    },
+  },
+  {
     id: "ChenYuluoyanThin",
     format: "truetype",
     ext: "ttf",

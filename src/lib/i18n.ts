@@ -159,6 +159,9 @@ const ZH: Messages = {
   "help.terms.font.DelaGothicOne.title": "Dela Gothic One",
   "help.terms.font.DelaGothicOne.desc":
     "由 Yuki Nakajima 與 artakana 設計的日系超粗黑體，造形飽滿厚實，適合做標題與海報主視覺。透過 Google Fonts 開源釋出。",
+  "help.terms.font.Jersey10.title": "Jersey 10",
+  "help.terms.font.Jersey10.desc":
+    "The Soft Type Project 製作的像素風顯示字體，靈感來自復古球衣背號與點陣顯示器，適合遊戲風或復古感標題。© 2023 The Soft Type Project Authors，僅收錄拉丁字母與數字。",
   "help.terms.font.ChenYuluoyanThin.title": "辰宇落雁體 Thin",
   "help.terms.font.ChenYuluoyanThin.desc":
     "由王立宇與劉韋辰於高中自主學習計畫中合作完成的繁體中文手寫字型，纖細而富有溫度，適合書信與抒情排版。",
@@ -352,6 +355,9 @@ const EN: Messages = {
   "help.terms.font.DelaGothicOne.title": "Dela Gothic One",
   "help.terms.font.DelaGothicOne.desc":
     "An ultra-bold Japanese display face by Yuki Nakajima and artakana, distributed via Google Fonts — great for headlines and poster-style art.",
+  "help.terms.font.Jersey10.title": "Jersey 10",
+  "help.terms.font.Jersey10.desc":
+    "A pixel display face from The Soft Type Project, inspired by retro jersey numbers and dot-matrix displays — good for game-style or retro headlines. © 2023 The Soft Type Project Authors; Latin letters and digits only.",
   "help.terms.font.ChenYuluoyanThin.title": "ChenYuluoyan Thin (辰宇落雁體)",
   "help.terms.font.ChenYuluoyanThin.desc":
     "A handwritten Traditional Chinese typeface by Wang Li-Yu and Liu Wei-Chen — delicate strokes with a warm, personal feel for letters and lyrical layouts.",

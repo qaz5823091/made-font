@@ -62,6 +62,7 @@ const FAMILY_LABELS: Record<string, string> = {
   GenYoMin2TW: "源樣明朝 GenYoMin2TW",
   IBMPlexSans: "IBM Plex Sans",
   DelaGothicOne: "Dela Gothic One",
+  Jersey10: "Jersey 10",
   ChenYuluoyanThin: "辰宇落雁體 ChenYuluoyan",
   BpmfZihiKaiStd: "字嗨注音標楷 BpmfZihiKaiStd",
 }
