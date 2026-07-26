@@ -22,6 +22,7 @@ import {
 } from "@/lib/theme"
 import { track } from "@/lib/analytics"
 import { initCustomFonts } from "@/lib/customFonts"
+import { useFlashToast } from "@/lib/useFlashToast"
 
 type Mode = "pure" | "image"
 
@@ -45,7 +46,7 @@ function Shell() {
   const [mode, setMode] = useState<Mode>("pure")
   const [splashed, setSplashed] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const { toast, flash } = useFlashToast()
   // Shared editor state — keeps content consistent across mobile/desktop layouts.
   const [pureText, setPureText] = useState(() => t("pure.placeholderText"))
   const [pureStyle, setPureStyle] = useState<TextStyle>(DEFAULT_STYLE)
@@ -55,11 +56,6 @@ function Shell() {
   useEffect(() => {
     initCustomFonts()
   }, [])
-
-  const flash = (msg: string) => {
-    setToast(msg)
-    window.setTimeout(() => setToast(null), 1800)
-  }
 
   const handleSelectImageMode = () => {
     if (IMAGE_MODE_ENABLED) {

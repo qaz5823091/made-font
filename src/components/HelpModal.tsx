@@ -236,6 +236,15 @@ function TermsPage() {
         ))}
       </div>
 
+      <div className="rounded-lg border bg-background/60 p-3 shadow-sm">
+        <div className="text-sm font-semibold">
+          {t("help.terms.custom.title")}
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t("help.terms.custom.body")}
+        </p>
+      </div>
+
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-200">
         <div className="text-xs font-semibold">
           {t("help.terms.disclaimer.title")}

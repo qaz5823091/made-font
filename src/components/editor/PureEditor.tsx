@@ -22,6 +22,7 @@ import {
 } from "@/lib/export"
 import { usePinchGesture } from "@/lib/gestures"
 import { useI18n } from "@/lib/i18n"
+import { useFlashToast } from "@/lib/useFlashToast"
 import { buildExportConfig, track } from "@/lib/analytics"
 import { StyleControls } from "./StyleControls"
 
@@ -37,8 +38,8 @@ type Props = {
 
 export function PureEditor({ text, setText, style, setStyle, onOpenAnimation }: Props) {
   const { t } = useI18n()
+  const { toast, flash } = useFlashToast()
   const [fontReady, setFontReady] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sizeAtPinchStart = useRef<number>(style.size)
 
@@ -156,11 +157,6 @@ export function PureEditor({ text, setText, style, setStyle, onOpenAnimation }: 
     return canvasToPngBlob(canvasRef.current)
   }, [])
 
-  const flash = (msg: string) => {
-    setToast(msg)
-    window.setTimeout(() => setToast(null), 1800)
-  }
-
   const handleCopy = () => {
     // Build the blob promise synchronously so Safari keeps the user-gesture
     // context required for clipboard writes.
@@ -246,7 +242,7 @@ export function PureEditor({ text, setText, style, setStyle, onOpenAnimation }: 
             />
           </div>
 
-          <StyleControls style={style} onChange={setStyle} />
+          <StyleControls style={style} onChange={setStyle} onToast={flash} />
 
           <div className="grid grid-cols-2 gap-2 pt-1">
             <button

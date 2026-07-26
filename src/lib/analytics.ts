@@ -129,6 +129,11 @@ export const track = {
   // passed through directly and appear as new dimension values in GA.
   changeFont: (fontId: string) => log("change_font", { font_id: fontId }),
 
+  // Fired once when a user successfully imports a custom font. Only the file
+  // extension is sent — it's low cardinality, and the font_id is a raw user
+  // filename we deliberately keep out of GA.
+  importFont: (ext: string) => log("import_font", { ext }),
+
   // property: "bold" | "italic" | "align" | "line_preset" | "bg_mode"
   changeStyle: (property: string, value: string | number | boolean) =>
     log("change_style", { property, value: String(value) }),

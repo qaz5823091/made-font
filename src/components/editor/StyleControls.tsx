@@ -34,6 +34,8 @@ import { track } from "@/lib/analytics"
 type Props = {
   style: TextStyle
   onChange: (next: TextStyle) => void
+  /** Surfaces import errors through the host editor's toast. */
+  onToast?: (msg: string) => void
 }
 
 const SWATCHES = [
@@ -63,7 +65,7 @@ const FAMILY_LABELS: Record<string, string> = {
   BpmfZihiKaiStd: "字嗨注音標楷 BpmfZihiKaiStd",
 }
 
-export function StyleControls({ style, onChange }: Props) {
+export function StyleControls({ style, onChange, onToast }: Props) {
   const { t } = useI18n()
   const customFonts = useCustomFonts()
   const family = getFamily(style.family)
@@ -81,6 +83,18 @@ export function StyleControls({ style, onChange }: Props) {
 
   const set = <K extends keyof TextStyle>(key: K, value: TextStyle[K]) =>
     onChange({ ...style, [key]: value })
+
+  const handleImport = async () => {
+    const res = await importCustomFont()
+    if (res.ok) {
+      set("family", res.family.id)
+      track.changeFont(res.family.id)
+    } else if (res.reason !== "cancelled") {
+      onToast?.(
+        t(res.reason === "quota" ? "font.quotaExceeded" : "font.importFailed"),
+      )
+    }
+  }
 
   return (
     <div className="space-y-2">
@@ -181,29 +195,20 @@ export function StyleControls({ style, onChange }: Props) {
         <SelectField
           label={t("panel.family")}
           value={style.family}
-          onChange={async (v) => {
-            if (v === "__import_font__") {
-              const family = await importCustomFont(t, () => {})
-              if (family) {
-                set("family", family.id)
-                track.changeFont(family.id)
-              }
-              return
-            }
-            set("family", v)
-            track.changeFont(v)
-          }}
-          options={[
-            ...FONT_FAMILIES.map((f) => ({
-              value: f.id,
-              label: FAMILY_LABELS[f.id] ?? f.id,
-            })),
-            ...customFonts.map((f) => ({
-              value: f.id,
-              label: f.id,
-            })),
-            { value: "__import_font__", label: `+ ${t("font.import")}` }
-          ]}
+          onChange={(v) => { set("family", v); track.changeFont(v) }}
+          options={[...FONT_FAMILIES, ...customFonts].map((f) => ({
+            value: f.id,
+            label: FAMILY_LABELS[f.id] ?? f.id,
+          }))}
+          action={
+            <button
+              type="button"
+              onClick={handleImport}
+              className="shrink-0 text-[10px] font-medium text-primary hover:underline"
+            >
+              + {t("font.import")}
+            </button>
+          }
         />
         <div>
           <Label>
@@ -337,15 +342,20 @@ function SelectField({
   value,
   onChange,
   options,
+  action,
 }: {
   label: React.ReactNode
   value: string
   onChange: (v: string) => void
   options: { value: string; label: string }[]
+  action?: React.ReactNode
 }) {
   return (
     <div>
-      <Label>{label}</Label>
+      <div className="flex items-center justify-between gap-1">
+        <Label>{label}</Label>
+        {action}
+      </div>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}

@@ -135,6 +135,9 @@ const ZH: Messages = {
   "help.terms.license.bpmfZihiKai": "CC BY 4.0＋SIL OFL 1.1",
   "help.terms.sourceHan": "Adobe Source Han Serif",
   "help.terms.twKai": "全字庫正楷體 TW-Kai",
+  "help.terms.custom.title": "自訂字體",
+  "help.terms.custom.body":
+    "你透過「匯入字體」加入的 .ttf / .otf 只會存在這台裝置的瀏覽器本機儲存空間（OPFS），不會上傳到伺服器。請自行確認你擁有該字體的使用權，其授權與使用方式由你負責。",
   "help.terms.disclaimer.title": "免責",
   "help.terms.disclaimer.body":
     "本服務由 @cppdesigns 維護，不對輸出結果負責。請確認你輸入的內容與輸出的圖片不侵犯第三方權益。",
@@ -273,6 +276,9 @@ const EN: Messages = {
   "help.terms.license.bpmfZihiKai": "CC BY 4.0 + SIL OFL 1.1",
   "help.terms.sourceHan": "Adobe Source Han Serif",
   "help.terms.twKai": "TW-Kai (全字庫正楷體)",
+  "help.terms.custom.title": "Custom fonts",
+  "help.terms.custom.body":
+    "Fonts you add via “Import font” (.ttf / .otf) are stored only in this device's local browser storage (OPFS) and are never uploaded. You're responsible for ensuring you have the right to use them.",
   "help.terms.disclaimer.title": "Disclaimer",
   "help.terms.disclaimer.body":
     "This service is maintained and ships as-is by @cppdesigns. You're responsible for ensuring that anything you type and anything you export does not infringe on third-party rights.",
