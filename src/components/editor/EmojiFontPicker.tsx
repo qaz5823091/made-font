@@ -26,6 +26,13 @@ type Props = {
    * downward panel would fall behind the toolbar.
    */
   placement?: "down" | "up"
+  /**
+   * Box styling for the trigger — size, radius, border, background — so each
+   * host can make it match the row it sits in: a square cell beside the
+   * bold/italic toggles on desktop, a round pill in the mobile toolbar.
+   * Centering and the open-state ring are always applied on top.
+   */
+  triggerClassName?: string
 }
 
 /**
@@ -36,7 +43,12 @@ type Props = {
  * Owns the change_emoji_font analytics event so every host (desktop panel,
  * mobile sheet) reports it exactly once.
  */
-export function EmojiFontPicker({ value, onChange, placement = "down" }: Props) {
+export function EmojiFontPicker({
+  value,
+  onChange,
+  placement = "down",
+  triggerClassName = "h-8 w-8 rounded-md border bg-background",
+}: Props) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [loadingId, setLoadingId] = useState<EmojiFontId | null>(null)
@@ -93,7 +105,7 @@ export function EmojiFontPicker({ value, onChange, placement = "down" }: Props) 
         aria-haspopup="listbox"
         aria-expanded={open}
         title={label}
-        className={`inline-flex h-8 w-8 items-center justify-center rounded-md border bg-background transition ${
+        className={`inline-flex items-center justify-center transition ${triggerClassName} ${
           open ? "border-primary ring-2 ring-primary/40" : "border-input"
         }`}
       >

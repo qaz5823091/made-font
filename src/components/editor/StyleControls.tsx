@@ -210,15 +210,6 @@ export function StyleControls({ style, onChange, onToast }: Props) {
               + {t("font.import")}
             </button>
           }
-          // Emoji graphemes are painted with their own font, so the picker
-          // belongs beside the family select rather than in a row of its own.
-          // The picker fires change_emoji_font itself — don't track here too.
-          trailing={
-            <EmojiFontPicker
-              value={style.emojiFamily}
-              onChange={(id) => set("emojiFamily", id)}
-            />
-          }
         />
         <div>
           <Label>
@@ -229,7 +220,7 @@ export function StyleControls({ style, onChange, onToast }: Props) {
               )}
             </span>
           </Label>
-          <div className="mt-1 grid grid-cols-2 gap-1">
+          <div className="mt-1 grid grid-cols-3 gap-1">
             <StyleToggle
               active={style.bold}
               disabled={!canBold}
@@ -243,6 +234,14 @@ export function StyleControls({ style, onChange, onToast }: Props) {
               onClick={() => { const next = !style.italic; set("italic", next); track.changeStyle("italic", next) }}
               aria={t("style.italic")}
               icon={<Italic className="h-3.5 w-3.5" />}
+            />
+            {/* Emoji font is a third "how the glyphs look" toggle, so it shares
+                the row with bold/italic. It fills its grid cell to match them.
+                The picker fires change_emoji_font itself — don't track here. */}
+            <EmojiFontPicker
+              value={style.emojiFamily}
+              onChange={(id) => set("emojiFamily", id)}
+              triggerClassName="h-8 w-full rounded-md border bg-background"
             />
           </div>
         </div>
@@ -353,15 +352,12 @@ function SelectField({
   onChange,
   options,
   action,
-  trailing,
 }: {
   label: React.ReactNode
   value: string
   onChange: (v: string) => void
   options: { value: string; label: string }[]
   action?: React.ReactNode
-  /** Control rendered to the right of the select, sharing its label row. */
-  trailing?: React.ReactNode
 }) {
   return (
     <div>
@@ -369,20 +365,17 @@ function SelectField({
         <Label>{label}</Label>
         {action}
       </div>
-      <div className="mt-1 flex items-center gap-1.5">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-full min-w-0 flex-1 appearance-none rounded-md border border-input bg-background bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2364748b%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-[length:14px_14px] bg-[position:right_8px_center] bg-no-repeat px-2 pr-7 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        {trailing}
-      </div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 h-8 w-full appearance-none rounded-md border border-input bg-background bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2364748b%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-[length:14px_14px] bg-[position:right_8px_center] bg-no-repeat px-2 pr-7 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

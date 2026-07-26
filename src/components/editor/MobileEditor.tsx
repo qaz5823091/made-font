@@ -30,7 +30,11 @@ import {
   resolveVariant,
 } from "@/lib/fonts"
 import { useCustomFonts, importCustomFont } from "@/lib/customFonts"
-import { ensureEmojiFontLoaded, textHasEmoji } from "@/lib/emojiFonts"
+import {
+  emojiCssFamily,
+  ensureEmojiFontLoaded,
+  textHasEmoji,
+} from "@/lib/emojiFonts"
 import {
   canvasPadding,
   cssFontShorthand,
@@ -513,7 +517,14 @@ export function MobileEditor({
               wrap="off"
               className="block h-full w-full resize-none overflow-hidden border-0 bg-transparent outline-none"
               style={{
-                fontFamily: `"${cssFamily}"`,
+                // Preview approximation: a textarea can't override the font per
+                // run the way the canvas does, so the emoji family is appended
+                // as a fallback — the main font keeps the text and emoji, which
+                // it has no glyphs for, fall through to the emoji webfont.
+                fontFamily:
+                  style.emojiFamily === "system"
+                    ? `"${cssFamily}"`
+                    : `"${cssFamily}", "${emojiCssFamily(style.emojiFamily)}"`,
                 fontSize: `${displaySize}px`,
                 lineHeight: styleLineHeight(style),
                 color: fg,
@@ -672,8 +683,12 @@ export function MobileEditor({
         style={{ bottom: keyboardOffset }}
       >
         <div className="relative flex items-center">
+        {/* gap-0.5, not gap-1: with the emoji picker added, this row carries 8
+            round 36px targets plus a divider, which at a 360px viewport would
+            otherwise burst out of the page's px-3 gutter. Tightening the gaps
+            (never the touch targets) buys back the 16px needed. */}
         <div
-          className="pointer-events-auto mx-auto flex w-fit items-center gap-1 rounded-full bg-background/85 px-2 py-1.5 shadow-md ring-1 ring-black/5 backdrop-blur"
+          className="pointer-events-auto mx-auto flex w-fit items-center gap-0.5 rounded-full bg-background/85 px-2 py-1.5 shadow-md ring-1 ring-black/5 backdrop-blur"
           onMouseDown={preserveFocusIfEditing}
         >
           <button
@@ -739,6 +754,19 @@ export function MobileEditor({
           >
             <Italic className="h-4 w-4" />
           </button>
+          {/* Emoji font sits in the always-visible group so it stays reachable
+              while editing (the textarea previews it live). Its panel opens
+              upward because this toolbar is anchored to the bottom, and being a
+              DOM child of the wrapper below it inherits the wrapper's
+              onMouseDown guard — tapping inside the panel can't blur the
+              textarea and dismiss the keyboard.
+              The picker fires change_emoji_font itself — no track() here. */}
+          <EmojiFontPicker
+            value={style.emojiFamily}
+            onChange={(id) => set("emojiFamily", id)}
+            placement="up"
+            triggerClassName="h-9 w-9 rounded-full bg-background"
+          />
 
           {!editing && (
             <>
@@ -853,12 +881,10 @@ export function MobileEditor({
               </button>
             ))}
           </div>
-          {/* Pinned action row: import on the left, emoji font on the right —
-              the same pairing as the desktop panel, where the emoji picker sits
-              at the right end of the family row. Its own panel opens upward:
-              this sheet is anchored to the bottom of the screen, so a downward
-              panel would land behind the toolbar. */}
-          <div className="mt-1 flex items-center gap-1 border-t border-border pt-1">
+          {/* Pinned import row — stays reachable however long the font list
+              grows. The emoji-font picker lives in the bottom toolbar instead,
+              so it is also reachable while editing. */}
+          <div className="mt-1 border-t border-border pt-1">
             <button
               type="button"
               onClick={async () => {
@@ -877,16 +903,10 @@ export function MobileEditor({
                   )
                 }
               }}
-              className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-primary transition hover:bg-muted"
+              className="w-full rounded-md px-3 py-2 text-left text-sm text-primary transition hover:bg-muted"
             >
               + {t("font.import")}
             </button>
-            {/* The picker fires change_emoji_font itself — no track() here. */}
-            <EmojiFontPicker
-              value={style.emojiFamily}
-              onChange={(id) => set("emojiFamily", id)}
-              placement="up"
-            />
           </div>
         </div>
       )}
